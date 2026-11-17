@@ -1,0 +1,9 @@
+# Thin run image: bakes the specs + manuals into orchestrator:latest so a one-shot run needs no
+# host bind mount (the local podman machine has no host directory sharing configured). Reports
+# are written inside the container and copied out afterward with `podman cp`.
+FROM orchestrator:latest
+USER root
+COPY tests_specs/ /app/tests_specs/
+COPY tests_manuals/ /app/tests_manuals/
+RUN chown -R orchestrator:orchestrator /app/tests_specs /app/tests_manuals
+USER orchestrator

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orchestrator Cookie — projects</title>
+<style>
+  :root { --pass:#1a7f37; --fail:#cf222e; --error:#9a6700; --bg:#f6f8fa; --fg:#1f2328; --muted:#656d76; --border:#d0d7de; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; color:var(--fg); background:var(--bg); }
+  .wrap { max-width:880px; margin:0 auto; padding:24px 16px 64px; }
+  a { color:#0969da; text-decoration:none; } a:hover { text-decoration:underline; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:13px; margin-bottom:16px; }
+  table { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+  th, td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); background:var(--bg); }
+  tr:last-child td { border-bottom:none; }
+  .muted { color:var(--muted); }
+  .empty { background:#fff; border:1px dashed var(--border); border-radius:8px; padding:24px; text-align:center; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Orchestrator Cookie</h1>
+  <p class="meta">{{ projects | length }} project(s)</p>
+
+  {% if projects %}
+  <table>
+    <thead><tr><th>Project</th><th>Runs</th><th>Latest run</th><th>Latest result</th></tr></thead>
+    <tbody>
+      {% for p in projects %}
+      <tr>
+        <td><a href="{{ p.index_href }}">{{ p.name }}</a></td>
+        <td>{{ p.run_count }}</td>
+        <td>{% if p.latest %}{{ p.latest.run_ts | fmt_ts }}{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td>
+          {% if p.latest %}
+            {{ p.latest.passed }}/{{ p.latest.total }} passed{% if p.latest.failed or p.latest.errored %}, {{ p.latest.failed }} failed, {{ p.latest.errored }} errored{% endif %}
+          {% else %}<span class="muted">—</span>{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty">No projects have produced reports yet.</div>
+  {% endif %}
+</div>
+</body>
+</html>

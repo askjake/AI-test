@@ -1,0 +1,1706 @@
+{
+  "created": {
+    "action_context_hop": 2,
+    "connections": [
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "required"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "10.70.115.36",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "runner desktop",
+        "order": 1,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+        "port": 3389,
+        "predecessor": null,
+        "protocol": "rdp",
+        "user": "operator1"
+      },
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "not_applicable"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "172.20.33.215",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop)",
+        "order": 2,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+        "port": 3389,
+        "predecessor": 1,
+        "protocol": "rdp",
+        "user": "jamuser"
+      }
+    ],
+    "execution_supported": false,
+    "final_hop": 2,
+    "findings": [
+      "Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.",
+      "An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.",
+      "A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.",
+      "Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.",
+      "Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.",
+      "No service, browser, shell, model, or network action was executed during intake."
+    ],
+    "id": "00000000000000000000000000000000",
+    "last_test": null,
+    "manual": "# JAMboreeVision service maintenance\n\n## Connection sequence\n\n1. RDP to 10.70.115.36:3389 as operator1; use saved reference `procedure-00000000000000000000000000000000-hop-1.rdp.pw`. Opened from runner desktop.\n2. RDP to 172.20.33.215:3389 as jamuser; use saved reference `procedure-00000000000000000000000000000000-hop-2.rdp.pw`. Opened from RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop).\n\nHops 2..N are opened inside the previous desktop with Windows Remote Desktop. Hop 1 is opened from the runner desktop; only saved reference names are recorded here.\n\nAll operating commands, browser localhost URLs, and COM-port checks below apply inside the final RDP desktop (hop 2), not on the dashboard server or the first desktop.\n\n\n## Procedure\n\n### Confirm the PowerShell session is elevated\n\nType: procedure-step\n\n1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)\n\nCompletion checks:\n- The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.\n- PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested.\n\n### Stop the service\n\nType: procedure-step; mutating\n\n2. Stop the service\nStop-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Stopped before any hardware work.\n\n### Confirm it is stopped\n\nType: procedure-step\n\n3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped\n\nCompletion checks:\n- must show Stopped\n\n### Confirm the TCP port is free; check serial ownership separately\n\nType: procedure-step\n\nConfirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004\n\nCompletion checks:\n- The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release.\n\n### Wait 10 seconds\n\nType: procedure-step\n\n5. Wait 10 seconds\n\nCompletion checks:\n\n\n### Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nType: operator-checkpoint\n\n6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n### Start the service\n\nType: procedure-step; mutating\n\n7. Start the service\nStart-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Running; service status alone is not application health.\n\n### Confirm it is Running\n\nType: procedure-step\n\n8. Confirm it is Running\nGet-Service -Name JAMboreeVision\n\nCompletion checks:\n\n\n### Check health\n\nType: procedure-step\n\n9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200\n\nCompletion checks:\n- The local application health request returns HTTP 200.\n\n### Open Chrome and inspect http://localhost:5004/\n\nType: procedure-step\n\n10. Open Chrome and inspect http://localhost:5004/\n\nCompletion checks:\n\n\n### Physically press Guide then Select on the receiver and confirm the menu\n\nType: operator-checkpoint\n\n11. Physically press Guide then Select on the receiver and confirm the menu\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n## Readiness and evidence\n\n- Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.\n- An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.\n- A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.\n- Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.\n- Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.\n- No service, browser, shell, model, or network action was executed during intake.",
+    "project": null,
+    "readiness": {
+      "items": [
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "key": "credential-hop-1",
+          "label": "Hop 1 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "key": "credential-hop-2",
+          "label": "Hop 2 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Probe and review the hop-1 certificate name and fingerprint.",
+          "key": "certificate-hop-1",
+          "label": "Hop 1 certificate reviewed",
+          "state": "required"
+        },
+        {
+          "detail": "11 steps",
+          "key": "operating-steps",
+          "label": "Operating steps present",
+          "state": "known"
+        },
+        {
+          "detail": "Steps 6, 11",
+          "key": "checkpoints",
+          "label": "Operator checkpoints noted",
+          "state": "known"
+        },
+        {
+          "detail": "Operating steps run inside the hop 2 desktop (nested Remote Desktop).",
+          "key": "final-hop",
+          "label": "Final hop",
+          "state": "known"
+        }
+      ]
+    },
+    "schema_version": 2,
+    "session_end": null,
+    "status": "draft-only",
+    "steps": [
+      {
+        "completion_checks": [
+          "The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.",
+          "PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested."
+        ],
+        "instructions": "1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 1,
+        "read_only_ok": true,
+        "title": "Confirm the PowerShell session is elevated"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Stopped before any hardware work."
+        ],
+        "instructions": "2. Stop the service\nStop-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 2,
+        "read_only_ok": false,
+        "title": "Stop the service"
+      },
+      {
+        "completion_checks": [
+          "must show Stopped"
+        ],
+        "instructions": "3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 3,
+        "read_only_ok": true,
+        "title": "Confirm it is stopped"
+      },
+      {
+        "completion_checks": [
+          "The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release."
+        ],
+        "instructions": "Confirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 4,
+        "read_only_ok": true,
+        "title": "Confirm the TCP port is free; check serial ownership separately"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "5. Wait 10 seconds",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 5,
+        "read_only_ok": false,
+        "title": "Wait 10 seconds"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 6,
+        "read_only_ok": false,
+        "title": "Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Running; service status alone is not application health."
+        ],
+        "instructions": "7. Start the service\nStart-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 7,
+        "read_only_ok": false,
+        "title": "Start the service"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "8. Confirm it is Running\nGet-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 8,
+        "read_only_ok": true,
+        "title": "Confirm it is Running"
+      },
+      {
+        "completion_checks": [
+          "The local application health request returns HTTP 200."
+        ],
+        "instructions": "9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 9,
+        "read_only_ok": true,
+        "title": "Check health"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "10. Open Chrome and inspect http://localhost:5004/",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 10,
+        "read_only_ok": true,
+        "title": "Open Chrome and inspect http://localhost:5004/"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "11. Physically press Guide then Select on the receiver and confirm the menu",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 11,
+        "read_only_ok": false,
+        "title": "Physically press Guide then Select on the receiver and confirm the menu"
+      }
+    ],
+    "title": "JAMboreeVision service maintenance"
+  },
+  "error_422": {
+    "errors": [
+      {
+        "field": "connections[1].port",
+        "message": "Port must be 1 through 65535."
+      }
+    ]
+  },
+  "project_created": {
+    "project_name": "project-NAME",
+    "warnings": []
+  },
+  "run_cancelled": {
+    "chain_progress": null,
+    "checkpoint": null,
+    "checkpoint_ack": null,
+    "checkpoint_pending": false,
+    "downgrade_reason": "",
+    "downgraded": false,
+    "effective_mode": "connection_test",
+    "evidence": [],
+    "mode": "connection_test",
+    "notes": [],
+    "project": "project-NAME",
+    "report_url": null,
+    "requested_mode": "connection_test",
+    "run_id": "trig_20261028T130000_cafebabe",
+    "state": "cancelled",
+    "state_source": "cancel_request",
+    "status": "cancelled",
+    "status_detail": {
+      "mode": "connection_test",
+      "state": "running"
+    }
+  },
+  "run_capability": {
+    "allowed_modes": [
+      "connection_test"
+    ],
+    "browser_verify": {
+      "available": false,
+      "projects": [],
+      "reason": "Browser playback verification is not available in this build: it is disabled by default and needs a reviewed configuration change on both the dashboard and the runner. Use Test connection.",
+      "url": "http://127.0.0.1:5004/"
+    },
+    "connection_only": true,
+    "disabled_modes": [
+      "read_only_check",
+      "full_run",
+      "browser_verify"
+    ],
+    "reason": "This release is qualified for connection tests only. Read-only checks and full runs are disabled: a procedure step can type or click on the wrong desktop, and that risk is unresolved. Run a connection test instead."
+  },
+  "run_checkpoint": {
+    "chain_progress": null,
+    "checkpoint": null,
+    "checkpoint_ack": null,
+    "checkpoint_pending": false,
+    "downgrade_reason": "",
+    "downgraded": false,
+    "effective_mode": "connection_test",
+    "evidence": [],
+    "mode": "connection_test",
+    "notes": [],
+    "project": "project-NAME",
+    "report_url": null,
+    "requested_mode": "connection_test",
+    "run_id": "trig_20261028T130000_cafebabe",
+    "state": "running",
+    "state_source": "cancel_request",
+    "status": "running",
+    "status_detail": {
+      "mode": "connection_test",
+      "state": "running"
+    }
+  },
+  "run_complete": {
+    "chain_progress": {
+      "active_hop": 2,
+      "hops": [
+        {
+          "detail": "",
+          "host": "10.70.115.36",
+          "order": 1,
+          "status": "confirmed",
+          "user": "operator1"
+        },
+        {
+          "detail": "",
+          "host": "172.20.33.215",
+          "order": 2,
+          "status": "confirmed",
+          "user": "jamuser"
+        }
+      ],
+      "notes": [
+        "No Windows session was signed out by this run."
+      ],
+      "phase": "chain_ready"
+    },
+    "checkpoint": null,
+    "checkpoint_ack": null,
+    "checkpoint_pending": false,
+    "downgrade_reason": "",
+    "downgraded": false,
+    "effective_mode": "connection_test",
+    "evidence": [
+      {
+        "hop": 2,
+        "name": "hop2_identity_console_007.png",
+        "phase": "identity console",
+        "url": "/reports/project-NAME/.nrdp-runs/trig_20261028T120000_deadbeef/evidence/hop2_identity_console_007.png"
+      }
+    ],
+    "mode": "connection_test",
+    "notes": [
+      "No Windows session was signed out by this run."
+    ],
+    "project": "project-NAME",
+    "report_url": null,
+    "requested_mode": "connection_test",
+    "run_id": "trig_20261028T120000_deadbeef",
+    "state": "complete",
+    "state_source": "status",
+    "status": "complete",
+    "status_detail": {
+      "downgrade_reason": "",
+      "downgraded": false,
+      "effective_mode": "connection_test",
+      "mode": "connection_test",
+      "requested_mode": "connection_test",
+      "result": "passed",
+      "state": "complete"
+    }
+  },
+  "run_downgraded": {
+    "chain_progress": null,
+    "checkpoint": null,
+    "checkpoint_ack": null,
+    "checkpoint_pending": false,
+    "downgrade_reason": "operating steps are disabled in this build (connection-only qualification)",
+    "downgraded": true,
+    "effective_mode": "connection_test",
+    "evidence": [],
+    "mode": "connection_test",
+    "notes": [],
+    "project": "project-NAME",
+    "report_url": null,
+    "requested_mode": "full_run",
+    "run_id": "trig_20261028T135959_d0wn9rad",
+    "state": "complete",
+    "state_source": "status",
+    "status": "complete",
+    "status_detail": {
+      "downgrade_reason": "operating steps are disabled in this build (connection-only qualification)",
+      "downgraded": true,
+      "effective_mode": "connection_test",
+      "mode": "connection_test",
+      "requested_mode": "full_run",
+      "result": "passed",
+      "state": "complete"
+    }
+  },
+  "run_full_refused": {
+    "detail": "This release is qualified for connection tests only. Read-only checks and full runs are disabled: a procedure step can type or click on the wrong desktop, and that risk is unresolved. Run a connection test instead."
+  },
+  "run_running": {
+    "chain_progress": null,
+    "checkpoint": null,
+    "checkpoint_ack": null,
+    "checkpoint_pending": false,
+    "downgrade_reason": "",
+    "downgraded": false,
+    "effective_mode": "connection_test",
+    "evidence": [],
+    "mode": "connection_test",
+    "notes": [],
+    "project": "project-NAME",
+    "report_url": null,
+    "requested_mode": "connection_test",
+    "run_id": "trig_20261028T120000_deadbeef",
+    "state": "running",
+    "state_source": "status",
+    "status": "running",
+    "status_detail": {
+      "downgraded": false,
+      "effective_mode": "connection_test",
+      "mode": "connection_test",
+      "requested_mode": "connection_test",
+      "state": "running"
+    }
+  },
+  "run_started": {
+    "run_id": "trig_20261028T120000_deadbeef"
+  },
+  "view_after_edit": {
+    "action_context_hop": 2,
+    "connections": [
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "name": "WIN-HOP1",
+          "state": "reviewed"
+        },
+        "certificate_fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "certificate_name": "WIN-HOP1",
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "10.70.115.36",
+        "identity_policy": "stop",
+        "label": "Jump PC",
+        "opened_from": "runner desktop",
+        "order": 1,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+        "port": 3389,
+        "predecessor": null,
+        "protocol": "rdp",
+        "user": "operator1"
+      },
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "not_applicable"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "172.20.33.215",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop)",
+        "order": 2,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+        "port": 3389,
+        "predecessor": 1,
+        "protocol": "rdp",
+        "user": "otheruser"
+      }
+    ],
+    "execution_supported": true,
+    "final_hop": 2,
+    "findings": [
+      "Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.",
+      "An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.",
+      "A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.",
+      "Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.",
+      "Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.",
+      "No service, browser, shell, model, or network action was executed during intake."
+    ],
+    "id": "00000000000000000000000000000000",
+    "last_test": null,
+    "manual": "# JAMboreeVision service maintenance\n\n## Connection sequence\n\n1. RDP to 10.70.115.36:3389 as operator1 (Jump PC); use saved reference `procedure-00000000000000000000000000000000-hop-1.rdp.pw`. Opened from runner desktop.\n2. RDP to 172.20.33.215:3389 as otheruser; use saved reference `procedure-00000000000000000000000000000000-hop-2.rdp.pw`. Opened from RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop).\n\nHops 2..N are opened inside the previous desktop with Windows Remote Desktop. Hop 1 is opened from the runner desktop; only saved reference names are recorded here.\n\nAll operating commands, browser localhost URLs, and COM-port checks below apply inside the final RDP desktop (hop 2), not on the dashboard server or the first desktop.\n\n\n## Procedure\n\n### Confirm the PowerShell session is elevated\n\nType: procedure-step\n\n1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)\n\nCompletion checks:\n- The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.\n- PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested.\n\n### Stop the service\n\nType: procedure-step; mutating\n\n2. Stop the service\nStop-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Stopped before any hardware work.\n\n### Confirm it is stopped\n\nType: procedure-step\n\n3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped\n\nCompletion checks:\n- must show Stopped\n\n### Confirm the TCP port is free; check serial ownership separately\n\nType: procedure-step\n\nConfirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004\n\nCompletion checks:\n- The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release.\n\n### Wait 10 seconds\n\nType: procedure-step\n\n5. Wait 10 seconds\n\nCompletion checks:\n\n\n### Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nType: operator-checkpoint\n\n6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n### Start the service\n\nType: procedure-step; mutating\n\n7. Start the service\nStart-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Running; service status alone is not application health.\n\n### Confirm it is Running\n\nType: procedure-step\n\n8. Confirm it is Running\nGet-Service -Name JAMboreeVision\n\nCompletion checks:\n\n\n### Check health\n\nType: procedure-step\n\n9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200\n\nCompletion checks:\n- The local application health request returns HTTP 200.\n\n### Open Chrome and inspect http://localhost:5004/\n\nType: procedure-step\n\n10. Open Chrome and inspect http://localhost:5004/\n\nCompletion checks:\n\n\n### Physically press Guide then Select on the receiver and confirm the menu\n\nType: operator-checkpoint\n\n11. Physically press Guide then Select on the receiver and confirm the menu\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n## Readiness and evidence\n\n- Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.\n- An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.\n- A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.\n- Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.\n- Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.\n- No service, browser, shell, model, or network action was executed during intake.",
+    "project": {
+      "created_at": "2026-10-28T12:00:00+00:00",
+      "current": false,
+      "name": "project-NAME",
+      "project_name": "project-NAME"
+    },
+    "readiness": {
+      "items": [
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "key": "credential-hop-1",
+          "label": "Hop 1 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "key": "credential-hop-2",
+          "label": "Hop 2 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "WIN-HOP1 sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "key": "certificate-hop-1",
+          "label": "Hop 1 certificate reviewed",
+          "state": "known"
+        },
+        {
+          "detail": "11 steps",
+          "key": "operating-steps",
+          "label": "Operating steps present",
+          "state": "known"
+        },
+        {
+          "detail": "Steps 6, 11",
+          "key": "checkpoints",
+          "label": "Operator checkpoints noted",
+          "state": "known"
+        },
+        {
+          "detail": "Operating steps run inside the hop 2 desktop (nested Remote Desktop).",
+          "key": "final-hop",
+          "label": "Final hop",
+          "state": "known"
+        }
+      ]
+    },
+    "run_capability": {
+      "allowed_modes": [
+        "connection_test"
+      ],
+      "browser_verify": {
+        "available": false,
+        "projects": [],
+        "reason": "Browser playback verification is not available in this build: it is disabled by default and needs a reviewed configuration change on both the dashboard and the runner. Use Test connection.",
+        "url": "http://127.0.0.1:5004/"
+      },
+      "connection_only": true,
+      "disabled_modes": [
+        "read_only_check",
+        "full_run",
+        "browser_verify"
+      ],
+      "reason": "This release is qualified for connection tests only. Read-only checks and full runs are disabled: a procedure step can type or click on the wrong desktop, and that risk is unresolved. Run a connection test instead."
+    },
+    "schema_version": 2,
+    "session_end": null,
+    "status": "draft-only",
+    "steps": [
+      {
+        "completion_checks": [
+          "The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.",
+          "PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested."
+        ],
+        "instructions": "1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 1,
+        "read_only_ok": true,
+        "title": "Confirm the PowerShell session is elevated"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Stopped before any hardware work."
+        ],
+        "instructions": "2. Stop the service\nStop-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 2,
+        "read_only_ok": false,
+        "title": "Stop the service"
+      },
+      {
+        "completion_checks": [
+          "must show Stopped"
+        ],
+        "instructions": "3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 3,
+        "read_only_ok": true,
+        "title": "Confirm it is stopped"
+      },
+      {
+        "completion_checks": [
+          "The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release."
+        ],
+        "instructions": "Confirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 4,
+        "read_only_ok": true,
+        "title": "Confirm the TCP port is free; check serial ownership separately"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "5. Wait 10 seconds",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 5,
+        "read_only_ok": false,
+        "title": "Wait 10 seconds"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 6,
+        "read_only_ok": false,
+        "title": "Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Running; service status alone is not application health."
+        ],
+        "instructions": "7. Start the service\nStart-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 7,
+        "read_only_ok": false,
+        "title": "Start the service"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "8. Confirm it is Running\nGet-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 8,
+        "read_only_ok": true,
+        "title": "Confirm it is Running"
+      },
+      {
+        "completion_checks": [
+          "The local application health request returns HTTP 200."
+        ],
+        "instructions": "9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 9,
+        "read_only_ok": true,
+        "title": "Check health"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "10. Open Chrome and inspect http://localhost:5004/",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 10,
+        "read_only_ok": true,
+        "title": "Open Chrome and inspect http://localhost:5004/"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "11. Physically press Guide then Select on the receiver and confirm the menu",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 11,
+        "read_only_ok": false,
+        "title": "Physically press Guide then Select on the receiver and confirm the menu"
+      }
+    ],
+    "title": "JAMboreeVision service maintenance"
+  },
+  "view_after_test": {
+    "action_context_hop": 2,
+    "connections": [
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "name": "WIN-HOP1",
+          "state": "reviewed"
+        },
+        "certificate_fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "certificate_name": "WIN-HOP1",
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "10.70.115.36",
+        "identity_policy": "stop",
+        "label": "Jump PC",
+        "opened_from": "runner desktop",
+        "order": 1,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+        "port": 3389,
+        "predecessor": null,
+        "protocol": "rdp",
+        "user": "operator1"
+      },
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "not_applicable"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "172.20.33.215",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop)",
+        "order": 2,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+        "port": 3389,
+        "predecessor": 1,
+        "protocol": "rdp",
+        "user": "jamuser"
+      }
+    ],
+    "execution_supported": true,
+    "final_hop": 2,
+    "findings": [
+      "Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.",
+      "An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.",
+      "A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.",
+      "Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.",
+      "Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.",
+      "No service, browser, shell, model, or network action was executed during intake."
+    ],
+    "id": "00000000000000000000000000000000",
+    "last_test": {
+      "at": "2026-10-28T12:00:00+00:00",
+      "current": true,
+      "mode": "connection_test",
+      "run_id": "trig_20261028T120000_deadbeef",
+      "status": "passed"
+    },
+    "manual": "# JAMboreeVision service maintenance\n\n## Connection sequence\n\n1. RDP to 10.70.115.36:3389 as operator1 (Jump PC); use saved reference `procedure-00000000000000000000000000000000-hop-1.rdp.pw`. Opened from runner desktop.\n2. RDP to 172.20.33.215:3389 as jamuser; use saved reference `procedure-00000000000000000000000000000000-hop-2.rdp.pw`. Opened from RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop).\n\nHops 2..N are opened inside the previous desktop with Windows Remote Desktop. Hop 1 is opened from the runner desktop; only saved reference names are recorded here.\n\nAll operating commands, browser localhost URLs, and COM-port checks below apply inside the final RDP desktop (hop 2), not on the dashboard server or the first desktop.\n\n\n## Procedure\n\n### Confirm the PowerShell session is elevated\n\nType: procedure-step\n\n1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)\n\nCompletion checks:\n- The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.\n- PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested.\n\n### Stop the service\n\nType: procedure-step; mutating\n\n2. Stop the service\nStop-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Stopped before any hardware work.\n\n### Confirm it is stopped\n\nType: procedure-step\n\n3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped\n\nCompletion checks:\n- must show Stopped\n\n### Confirm the TCP port is free; check serial ownership separately\n\nType: procedure-step\n\nConfirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004\n\nCompletion checks:\n- The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release.\n\n### Wait 10 seconds\n\nType: procedure-step\n\n5. Wait 10 seconds\n\nCompletion checks:\n\n\n### Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nType: operator-checkpoint\n\n6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n### Start the service\n\nType: procedure-step; mutating\n\n7. Start the service\nStart-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Running; service status alone is not application health.\n\n### Confirm it is Running\n\nType: procedure-step\n\n8. Confirm it is Running\nGet-Service -Name JAMboreeVision\n\nCompletion checks:\n\n\n### Check health\n\nType: procedure-step\n\n9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200\n\nCompletion checks:\n- The local application health request returns HTTP 200.\n\n### Open Chrome and inspect http://localhost:5004/\n\nType: procedure-step\n\n10. Open Chrome and inspect http://localhost:5004/\n\nCompletion checks:\n\n\n### Physically press Guide then Select on the receiver and confirm the menu\n\nType: operator-checkpoint\n\n11. Physically press Guide then Select on the receiver and confirm the menu\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n## Readiness and evidence\n\n- Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.\n- An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.\n- A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.\n- Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.\n- Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.\n- No service, browser, shell, model, or network action was executed during intake.",
+    "project": {
+      "created_at": "2026-10-28T12:00:00+00:00",
+      "current": true,
+      "name": "project-NAME",
+      "project_name": "project-NAME"
+    },
+    "readiness": {
+      "items": [
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "key": "credential-hop-1",
+          "label": "Hop 1 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "key": "credential-hop-2",
+          "label": "Hop 2 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "WIN-HOP1 sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "key": "certificate-hop-1",
+          "label": "Hop 1 certificate reviewed",
+          "state": "known"
+        },
+        {
+          "detail": "11 steps",
+          "key": "operating-steps",
+          "label": "Operating steps present",
+          "state": "known"
+        },
+        {
+          "detail": "Steps 6, 11",
+          "key": "checkpoints",
+          "label": "Operator checkpoints noted",
+          "state": "known"
+        },
+        {
+          "detail": "Operating steps run inside the hop 2 desktop (nested Remote Desktop).",
+          "key": "final-hop",
+          "label": "Final hop",
+          "state": "known"
+        }
+      ]
+    },
+    "run_capability": {
+      "allowed_modes": [
+        "connection_test"
+      ],
+      "browser_verify": {
+        "available": false,
+        "projects": [],
+        "reason": "Browser playback verification is not available in this build: it is disabled by default and needs a reviewed configuration change on both the dashboard and the runner. Use Test connection.",
+        "url": "http://127.0.0.1:5004/"
+      },
+      "connection_only": true,
+      "disabled_modes": [
+        "read_only_check",
+        "full_run",
+        "browser_verify"
+      ],
+      "reason": "This release is qualified for connection tests only. Read-only checks and full runs are disabled: a procedure step can type or click on the wrong desktop, and that risk is unresolved. Run a connection test instead."
+    },
+    "schema_version": 2,
+    "session_end": null,
+    "status": "draft-only",
+    "steps": [
+      {
+        "completion_checks": [
+          "The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.",
+          "PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested."
+        ],
+        "instructions": "1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 1,
+        "read_only_ok": true,
+        "title": "Confirm the PowerShell session is elevated"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Stopped before any hardware work."
+        ],
+        "instructions": "2. Stop the service\nStop-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 2,
+        "read_only_ok": false,
+        "title": "Stop the service"
+      },
+      {
+        "completion_checks": [
+          "must show Stopped"
+        ],
+        "instructions": "3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 3,
+        "read_only_ok": true,
+        "title": "Confirm it is stopped"
+      },
+      {
+        "completion_checks": [
+          "The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release."
+        ],
+        "instructions": "Confirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 4,
+        "read_only_ok": true,
+        "title": "Confirm the TCP port is free; check serial ownership separately"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "5. Wait 10 seconds",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 5,
+        "read_only_ok": false,
+        "title": "Wait 10 seconds"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 6,
+        "read_only_ok": false,
+        "title": "Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Running; service status alone is not application health."
+        ],
+        "instructions": "7. Start the service\nStart-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 7,
+        "read_only_ok": false,
+        "title": "Start the service"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "8. Confirm it is Running\nGet-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 8,
+        "read_only_ok": true,
+        "title": "Confirm it is Running"
+      },
+      {
+        "completion_checks": [
+          "The local application health request returns HTTP 200."
+        ],
+        "instructions": "9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 9,
+        "read_only_ok": true,
+        "title": "Check health"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "10. Open Chrome and inspect http://localhost:5004/",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 10,
+        "read_only_ok": true,
+        "title": "Open Chrome and inspect http://localhost:5004/"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "11. Physically press Guide then Select on the receiver and confirm the menu",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 11,
+        "read_only_ok": false,
+        "title": "Physically press Guide then Select on the receiver and confirm the menu"
+      }
+    ],
+    "title": "JAMboreeVision service maintenance"
+  },
+  "view_cert_reviewed": {
+    "action_context_hop": 2,
+    "connections": [
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "name": "WIN-HOP1",
+          "state": "reviewed"
+        },
+        "certificate_fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "certificate_name": "WIN-HOP1",
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "10.70.115.36",
+        "identity_policy": "stop",
+        "label": "Jump PC",
+        "opened_from": "runner desktop",
+        "order": 1,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+        "port": 3389,
+        "predecessor": null,
+        "protocol": "rdp",
+        "user": "operator1"
+      },
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "not_applicable"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "172.20.33.215",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop)",
+        "order": 2,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+        "port": 3389,
+        "predecessor": 1,
+        "protocol": "rdp",
+        "user": "jamuser"
+      }
+    ],
+    "execution_supported": true,
+    "final_hop": 2,
+    "findings": [
+      "Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.",
+      "An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.",
+      "A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.",
+      "Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.",
+      "Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.",
+      "No service, browser, shell, model, or network action was executed during intake."
+    ],
+    "id": "00000000000000000000000000000000",
+    "last_test": null,
+    "manual": "# JAMboreeVision service maintenance\n\n## Connection sequence\n\n1. RDP to 10.70.115.36:3389 as operator1 (Jump PC); use saved reference `procedure-00000000000000000000000000000000-hop-1.rdp.pw`. Opened from runner desktop.\n2. RDP to 172.20.33.215:3389 as jamuser; use saved reference `procedure-00000000000000000000000000000000-hop-2.rdp.pw`. Opened from RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop).\n\nHops 2..N are opened inside the previous desktop with Windows Remote Desktop. Hop 1 is opened from the runner desktop; only saved reference names are recorded here.\n\nAll operating commands, browser localhost URLs, and COM-port checks below apply inside the final RDP desktop (hop 2), not on the dashboard server or the first desktop.\n\n\n## Procedure\n\n### Confirm the PowerShell session is elevated\n\nType: procedure-step\n\n1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)\n\nCompletion checks:\n- The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.\n- PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested.\n\n### Stop the service\n\nType: procedure-step; mutating\n\n2. Stop the service\nStop-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Stopped before any hardware work.\n\n### Confirm it is stopped\n\nType: procedure-step\n\n3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped\n\nCompletion checks:\n- must show Stopped\n\n### Confirm the TCP port is free; check serial ownership separately\n\nType: procedure-step\n\nConfirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004\n\nCompletion checks:\n- The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release.\n\n### Wait 10 seconds\n\nType: procedure-step\n\n5. Wait 10 seconds\n\nCompletion checks:\n\n\n### Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nType: operator-checkpoint\n\n6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n### Start the service\n\nType: procedure-step; mutating\n\n7. Start the service\nStart-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Running; service status alone is not application health.\n\n### Confirm it is Running\n\nType: procedure-step\n\n8. Confirm it is Running\nGet-Service -Name JAMboreeVision\n\nCompletion checks:\n\n\n### Check health\n\nType: procedure-step\n\n9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200\n\nCompletion checks:\n- The local application health request returns HTTP 200.\n\n### Open Chrome and inspect http://localhost:5004/\n\nType: procedure-step\n\n10. Open Chrome and inspect http://localhost:5004/\n\nCompletion checks:\n\n\n### Physically press Guide then Select on the receiver and confirm the menu\n\nType: operator-checkpoint\n\n11. Physically press Guide then Select on the receiver and confirm the menu\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n## Readiness and evidence\n\n- Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.\n- An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.\n- A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.\n- Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.\n- Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.\n- No service, browser, shell, model, or network action was executed during intake.",
+    "project": null,
+    "readiness": {
+      "items": [
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "key": "credential-hop-1",
+          "label": "Hop 1 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "key": "credential-hop-2",
+          "label": "Hop 2 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "WIN-HOP1 sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "key": "certificate-hop-1",
+          "label": "Hop 1 certificate reviewed",
+          "state": "known"
+        },
+        {
+          "detail": "11 steps",
+          "key": "operating-steps",
+          "label": "Operating steps present",
+          "state": "known"
+        },
+        {
+          "detail": "Steps 6, 11",
+          "key": "checkpoints",
+          "label": "Operator checkpoints noted",
+          "state": "known"
+        },
+        {
+          "detail": "Operating steps run inside the hop 2 desktop (nested Remote Desktop).",
+          "key": "final-hop",
+          "label": "Final hop",
+          "state": "known"
+        }
+      ]
+    },
+    "run_capability": {
+      "allowed_modes": [
+        "connection_test"
+      ],
+      "browser_verify": {
+        "available": false,
+        "projects": [],
+        "reason": "Browser playback verification is not available in this build: it is disabled by default and needs a reviewed configuration change on both the dashboard and the runner. Use Test connection.",
+        "url": "http://127.0.0.1:5004/"
+      },
+      "connection_only": true,
+      "disabled_modes": [
+        "read_only_check",
+        "full_run",
+        "browser_verify"
+      ],
+      "reason": "This release is qualified for connection tests only. Read-only checks and full runs are disabled: a procedure step can type or click on the wrong desktop, and that risk is unresolved. Run a connection test instead."
+    },
+    "schema_version": 2,
+    "session_end": null,
+    "status": "draft-only",
+    "steps": [
+      {
+        "completion_checks": [
+          "The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.",
+          "PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested."
+        ],
+        "instructions": "1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 1,
+        "read_only_ok": true,
+        "title": "Confirm the PowerShell session is elevated"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Stopped before any hardware work."
+        ],
+        "instructions": "2. Stop the service\nStop-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 2,
+        "read_only_ok": false,
+        "title": "Stop the service"
+      },
+      {
+        "completion_checks": [
+          "must show Stopped"
+        ],
+        "instructions": "3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 3,
+        "read_only_ok": true,
+        "title": "Confirm it is stopped"
+      },
+      {
+        "completion_checks": [
+          "The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release."
+        ],
+        "instructions": "Confirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 4,
+        "read_only_ok": true,
+        "title": "Confirm the TCP port is free; check serial ownership separately"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "5. Wait 10 seconds",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 5,
+        "read_only_ok": false,
+        "title": "Wait 10 seconds"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 6,
+        "read_only_ok": false,
+        "title": "Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Running; service status alone is not application health."
+        ],
+        "instructions": "7. Start the service\nStart-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 7,
+        "read_only_ok": false,
+        "title": "Start the service"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "8. Confirm it is Running\nGet-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 8,
+        "read_only_ok": true,
+        "title": "Confirm it is Running"
+      },
+      {
+        "completion_checks": [
+          "The local application health request returns HTTP 200."
+        ],
+        "instructions": "9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 9,
+        "read_only_ok": true,
+        "title": "Check health"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "10. Open Chrome and inspect http://localhost:5004/",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 10,
+        "read_only_ok": true,
+        "title": "Open Chrome and inspect http://localhost:5004/"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "11. Physically press Guide then Select on the receiver and confirm the menu",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 11,
+        "read_only_ok": false,
+        "title": "Physically press Guide then Select on the receiver and confirm the menu"
+      }
+    ],
+    "title": "JAMboreeVision service maintenance"
+  },
+  "view_new": {
+    "action_context_hop": 2,
+    "connections": [
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "required"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "10.70.115.36",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "runner desktop",
+        "order": 1,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+        "port": 3389,
+        "predecessor": null,
+        "protocol": "rdp",
+        "user": "operator1"
+      },
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "not_applicable"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "172.20.33.215",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop)",
+        "order": 2,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+        "port": 3389,
+        "predecessor": 1,
+        "protocol": "rdp",
+        "user": "jamuser"
+      }
+    ],
+    "execution_supported": false,
+    "final_hop": 2,
+    "findings": [
+      "Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.",
+      "An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.",
+      "A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.",
+      "Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.",
+      "Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.",
+      "No service, browser, shell, model, or network action was executed during intake."
+    ],
+    "id": "00000000000000000000000000000000",
+    "last_test": null,
+    "manual": "# JAMboreeVision service maintenance\n\n## Connection sequence\n\n1. RDP to 10.70.115.36:3389 as operator1; use saved reference `procedure-00000000000000000000000000000000-hop-1.rdp.pw`. Opened from runner desktop.\n2. RDP to 172.20.33.215:3389 as jamuser; use saved reference `procedure-00000000000000000000000000000000-hop-2.rdp.pw`. Opened from RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop).\n\nHops 2..N are opened inside the previous desktop with Windows Remote Desktop. Hop 1 is opened from the runner desktop; only saved reference names are recorded here.\n\nAll operating commands, browser localhost URLs, and COM-port checks below apply inside the final RDP desktop (hop 2), not on the dashboard server or the first desktop.\n\n\n## Procedure\n\n### Confirm the PowerShell session is elevated\n\nType: procedure-step\n\n1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)\n\nCompletion checks:\n- The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.\n- PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested.\n\n### Stop the service\n\nType: procedure-step; mutating\n\n2. Stop the service\nStop-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Stopped before any hardware work.\n\n### Confirm it is stopped\n\nType: procedure-step\n\n3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped\n\nCompletion checks:\n- must show Stopped\n\n### Confirm the TCP port is free; check serial ownership separately\n\nType: procedure-step\n\nConfirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004\n\nCompletion checks:\n- The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release.\n\n### Wait 10 seconds\n\nType: procedure-step\n\n5. Wait 10 seconds\n\nCompletion checks:\n\n\n### Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nType: operator-checkpoint\n\n6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n### Start the service\n\nType: procedure-step; mutating\n\n7. Start the service\nStart-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Running; service status alone is not application health.\n\n### Confirm it is Running\n\nType: procedure-step\n\n8. Confirm it is Running\nGet-Service -Name JAMboreeVision\n\nCompletion checks:\n\n\n### Check health\n\nType: procedure-step\n\n9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200\n\nCompletion checks:\n- The local application health request returns HTTP 200.\n\n### Open Chrome and inspect http://localhost:5004/\n\nType: procedure-step\n\n10. Open Chrome and inspect http://localhost:5004/\n\nCompletion checks:\n\n\n### Physically press Guide then Select on the receiver and confirm the menu\n\nType: operator-checkpoint\n\n11. Physically press Guide then Select on the receiver and confirm the menu\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n## Readiness and evidence\n\n- Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.\n- An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.\n- A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.\n- Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.\n- Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.\n- No service, browser, shell, model, or network action was executed during intake.",
+    "project": null,
+    "readiness": {
+      "items": [
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "key": "credential-hop-1",
+          "label": "Hop 1 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "key": "credential-hop-2",
+          "label": "Hop 2 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Probe and review the hop-1 certificate name and fingerprint.",
+          "key": "certificate-hop-1",
+          "label": "Hop 1 certificate reviewed",
+          "state": "required"
+        },
+        {
+          "detail": "11 steps",
+          "key": "operating-steps",
+          "label": "Operating steps present",
+          "state": "known"
+        },
+        {
+          "detail": "Steps 6, 11",
+          "key": "checkpoints",
+          "label": "Operator checkpoints noted",
+          "state": "known"
+        },
+        {
+          "detail": "Operating steps run inside the hop 2 desktop (nested Remote Desktop).",
+          "key": "final-hop",
+          "label": "Final hop",
+          "state": "known"
+        }
+      ]
+    },
+    "run_capability": {
+      "allowed_modes": [
+        "connection_test"
+      ],
+      "browser_verify": {
+        "available": false,
+        "projects": [],
+        "reason": "Browser playback verification is not available in this build: it is disabled by default and needs a reviewed configuration change on both the dashboard and the runner. Use Test connection.",
+        "url": "http://127.0.0.1:5004/"
+      },
+      "connection_only": true,
+      "disabled_modes": [
+        "read_only_check",
+        "full_run",
+        "browser_verify"
+      ],
+      "reason": "This release is qualified for connection tests only. Read-only checks and full runs are disabled: a procedure step can type or click on the wrong desktop, and that risk is unresolved. Run a connection test instead."
+    },
+    "schema_version": 2,
+    "session_end": null,
+    "status": "draft-only",
+    "steps": [
+      {
+        "completion_checks": [
+          "The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.",
+          "PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested."
+        ],
+        "instructions": "1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 1,
+        "read_only_ok": true,
+        "title": "Confirm the PowerShell session is elevated"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Stopped before any hardware work."
+        ],
+        "instructions": "2. Stop the service\nStop-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 2,
+        "read_only_ok": false,
+        "title": "Stop the service"
+      },
+      {
+        "completion_checks": [
+          "must show Stopped"
+        ],
+        "instructions": "3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 3,
+        "read_only_ok": true,
+        "title": "Confirm it is stopped"
+      },
+      {
+        "completion_checks": [
+          "The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release."
+        ],
+        "instructions": "Confirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 4,
+        "read_only_ok": true,
+        "title": "Confirm the TCP port is free; check serial ownership separately"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "5. Wait 10 seconds",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 5,
+        "read_only_ok": false,
+        "title": "Wait 10 seconds"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 6,
+        "read_only_ok": false,
+        "title": "Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Running; service status alone is not application health."
+        ],
+        "instructions": "7. Start the service\nStart-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 7,
+        "read_only_ok": false,
+        "title": "Start the service"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "8. Confirm it is Running\nGet-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 8,
+        "read_only_ok": true,
+        "title": "Confirm it is Running"
+      },
+      {
+        "completion_checks": [
+          "The local application health request returns HTTP 200."
+        ],
+        "instructions": "9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 9,
+        "read_only_ok": true,
+        "title": "Check health"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "10. Open Chrome and inspect http://localhost:5004/",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 10,
+        "read_only_ok": true,
+        "title": "Open Chrome and inspect http://localhost:5004/"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "11. Physically press Guide then Select on the receiver and confirm the menu",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 11,
+        "read_only_ok": false,
+        "title": "Physically press Guide then Select on the receiver and confirm the menu"
+      }
+    ],
+    "title": "JAMboreeVision service maintenance"
+  },
+  "view_project": {
+    "action_context_hop": 2,
+    "connections": [
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "name": "WIN-HOP1",
+          "state": "reviewed"
+        },
+        "certificate_fingerprint": "sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "certificate_name": "WIN-HOP1",
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "10.70.115.36",
+        "identity_policy": "stop",
+        "label": "Jump PC",
+        "opened_from": "runner desktop",
+        "order": 1,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+        "port": 3389,
+        "predecessor": null,
+        "protocol": "rdp",
+        "user": "operator1"
+      },
+      {
+        "auth_method": "vnc-password",
+        "certificate": {
+          "fingerprint": "",
+          "name": "",
+          "state": "not_applicable"
+        },
+        "certificate_fingerprint": null,
+        "certificate_name": null,
+        "credential": {
+          "reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "state": "saved"
+        },
+        "display": null,
+        "host": "172.20.33.215",
+        "identity_policy": "stop",
+        "label": null,
+        "opened_from": "RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop)",
+        "order": 2,
+        "password_reference": "procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+        "port": 3389,
+        "predecessor": 1,
+        "protocol": "rdp",
+        "user": "jamuser"
+      }
+    ],
+    "execution_supported": true,
+    "final_hop": 2,
+    "findings": [
+      "Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.",
+      "An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.",
+      "A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.",
+      "Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.",
+      "Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.",
+      "No service, browser, shell, model, or network action was executed during intake."
+    ],
+    "id": "00000000000000000000000000000000",
+    "last_test": null,
+    "manual": "# JAMboreeVision service maintenance\n\n## Connection sequence\n\n1. RDP to 10.70.115.36:3389 as operator1 (Jump PC); use saved reference `procedure-00000000000000000000000000000000-hop-1.rdp.pw`. Opened from runner desktop.\n2. RDP to 172.20.33.215:3389 as jamuser; use saved reference `procedure-00000000000000000000000000000000-hop-2.rdp.pw`. Opened from RDP desktop from hop 1 (Windows Remote Desktop inside the previous desktop).\n\nHops 2..N are opened inside the previous desktop with Windows Remote Desktop. Hop 1 is opened from the runner desktop; only saved reference names are recorded here.\n\nAll operating commands, browser localhost URLs, and COM-port checks below apply inside the final RDP desktop (hop 2), not on the dashboard server or the first desktop.\n\n\n## Procedure\n\n### Confirm the PowerShell session is elevated\n\nType: procedure-step\n\n1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)\n\nCompletion checks:\n- The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.\n- PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested.\n\n### Stop the service\n\nType: procedure-step; mutating\n\n2. Stop the service\nStop-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Stopped before any hardware work.\n\n### Confirm it is stopped\n\nType: procedure-step\n\n3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped\n\nCompletion checks:\n- must show Stopped\n\n### Confirm the TCP port is free; check serial ownership separately\n\nType: procedure-step\n\nConfirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004\n\nCompletion checks:\n- The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release.\n\n### Wait 10 seconds\n\nType: procedure-step\n\n5. Wait 10 seconds\n\nCompletion checks:\n\n\n### Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nType: operator-checkpoint\n\n6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n### Start the service\n\nType: procedure-step; mutating\n\n7. Start the service\nStart-Service -Name JAMboreeVision\n\nCompletion checks:\n- If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.\n- The named Windows service reaches Running; service status alone is not application health.\n\n### Confirm it is Running\n\nType: procedure-step\n\n8. Confirm it is Running\nGet-Service -Name JAMboreeVision\n\nCompletion checks:\n\n\n### Check health\n\nType: procedure-step\n\n9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200\n\nCompletion checks:\n- The local application health request returns HTTP 200.\n\n### Open Chrome and inspect http://localhost:5004/\n\nType: procedure-step\n\n10. Open Chrome and inspect http://localhost:5004/\n\nCompletion checks:\n\n\n### Physically press Guide then Select on the receiver and confirm the menu\n\nType: operator-checkpoint\n\n11. Physically press Guide then Select on the receiver and confirm the menu\n\nCompletion checks:\n- Operator completion is required; do not infer a physical action or result from screenshots or HTTP status.\n\n## Readiness and evidence\n\n- Nested Remote Desktop: hop 1 is opened from the runner desktop and each later hop is opened inside the previous desktop with Windows Remote Desktop. The chain is executable only after the hop-1 certificate is reviewed. All hops are preserved; this is not a direct connection to the final host.\n- An explicit \"open PowerShell as Administrator\" action was added before the elevation check; the check alone does not open an elevated window.\n- A free TCP port does not prove a serial handle is released. Confirm COM-port ownership separately before hardware work; never force-release a handle.\n- Physical work and receiver button checks require operator completion. No hardware action or physical result is inferred from HTTP 200.\n- Hardware work is not specified sufficiently for automation. Keep it as an operator checkpoint; do not infer firmware, wiring, or a flashing command.\n- No service, browser, shell, model, or network action was executed during intake.",
+    "project": {
+      "created_at": "2026-10-28T12:00:00+00:00",
+      "current": true,
+      "name": "project-NAME",
+      "project_name": "project-NAME"
+    },
+    "readiness": {
+      "items": [
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-1.rdp.pw",
+          "key": "credential-hop-1",
+          "label": "Hop 1 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "Saved reference procedure-00000000000000000000000000000000-hop-2.rdp.pw",
+          "key": "credential-hop-2",
+          "label": "Hop 2 credential saved",
+          "state": "known"
+        },
+        {
+          "detail": "WIN-HOP1 sha256:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "key": "certificate-hop-1",
+          "label": "Hop 1 certificate reviewed",
+          "state": "known"
+        },
+        {
+          "detail": "11 steps",
+          "key": "operating-steps",
+          "label": "Operating steps present",
+          "state": "known"
+        },
+        {
+          "detail": "Steps 6, 11",
+          "key": "checkpoints",
+          "label": "Operator checkpoints noted",
+          "state": "known"
+        },
+        {
+          "detail": "Operating steps run inside the hop 2 desktop (nested Remote Desktop).",
+          "key": "final-hop",
+          "label": "Final hop",
+          "state": "known"
+        }
+      ]
+    },
+    "run_capability": {
+      "allowed_modes": [
+        "connection_test"
+      ],
+      "browser_verify": {
+        "available": false,
+        "projects": [],
+        "reason": "Browser playback verification is not available in this build: it is disabled by default and needs a reviewed configuration change on both the dashboard and the runner. Use Test connection.",
+        "url": "http://127.0.0.1:5004/"
+      },
+      "connection_only": true,
+      "disabled_modes": [
+        "read_only_check",
+        "full_run",
+        "browser_verify"
+      ],
+      "reason": "This release is qualified for connection tests only. Read-only checks and full runs are disabled: a procedure step can type or click on the wrong desktop, and that risk is unresolved. Run a connection test instead."
+    },
+    "schema_version": 2,
+    "session_end": null,
+    "status": "draft-only",
+    "steps": [
+      {
+        "completion_checks": [
+          "The current token is elevated: IsInRole(Administrator) returns True. Otherwise stop and reopen PowerShell as administrator.",
+          "PowerShell was opened as Administrator. A consent-only User Account Control box may be approved; stop if a user name or password is requested."
+        ],
+        "instructions": "1. Confirm the PowerShell session is elevated\nOpen Windows PowerShell as Administrator: right-click Windows PowerShell and choose \"Run as administrator\". If a User Account Control box asks only Yes/No, choose Yes; if it asks for a user name or password, stop and report it.\n([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 1,
+        "read_only_ok": true,
+        "title": "Confirm the PowerShell session is elevated"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Stopped before any hardware work."
+        ],
+        "instructions": "2. Stop the service\nStop-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 2,
+        "read_only_ok": false,
+        "title": "Stop the service"
+      },
+      {
+        "completion_checks": [
+          "must show Stopped"
+        ],
+        "instructions": "3. Confirm it is stopped\nGet-Service -Name JAMboreeVision\nmust show Stopped",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 3,
+        "read_only_ok": true,
+        "title": "Confirm it is stopped"
+      },
+      {
+        "completion_checks": [
+          "The specified TCP port has no remaining connections. Wait if entries remain; this does not establish COM-handle release."
+        ],
+        "instructions": "Confirm the TCP port is free; check serial ownership separately\nGet-NetTCPConnection -LocalPort 5004",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 4,
+        "read_only_ok": true,
+        "title": "Confirm the TCP port is free; check serial ownership separately"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "5. Wait 10 seconds",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 5,
+        "read_only_ok": false,
+        "title": "Wait 10 seconds"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "6. Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 6,
+        "read_only_ok": false,
+        "title": "Swap wires COM3 to COM4 for Guide and Select hardware work, operator pause"
+      },
+      {
+        "completion_checks": [
+          "If the service does not reach the expected state in time, stop and report the failure. Never force it: no -Force, Stop-Process or taskkill, and never start.cmd, start.ps1 or Manage-Service.ps1.",
+          "The named Windows service reaches Running; service status alone is not application health."
+        ],
+        "instructions": "7. Start the service\nStart-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": true,
+        "order": 7,
+        "read_only_ok": false,
+        "title": "Start the service"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "8. Confirm it is Running\nGet-Service -Name JAMboreeVision",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 8,
+        "read_only_ok": true,
+        "title": "Confirm it is Running"
+      },
+      {
+        "completion_checks": [
+          "The local application health request returns HTTP 200."
+        ],
+        "instructions": "9. Check health\nInvoke-WebRequest http://localhost:5004/ should return 200",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 9,
+        "read_only_ok": true,
+        "title": "Check health"
+      },
+      {
+        "completion_checks": [],
+        "instructions": "10. Open Chrome and inspect http://localhost:5004/",
+        "kind": "procedure-step",
+        "mutating": false,
+        "order": 10,
+        "read_only_ok": true,
+        "title": "Open Chrome and inspect http://localhost:5004/"
+      },
+      {
+        "completion_checks": [
+          "Operator completion is required; do not infer a physical action or result from screenshots or HTTP status."
+        ],
+        "instructions": "11. Physically press Guide then Select on the receiver and confirm the menu",
+        "kind": "operator-checkpoint",
+        "mutating": false,
+        "order": 11,
+        "read_only_ok": false,
+        "title": "Physically press Guide then Select on the receiver and confirm the menu"
+      }
+    ],
+    "title": "JAMboreeVision service maintenance"
+  }
+}

@@ -1,0 +1,21 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+
+# vendored build deps (downloaded on the host, not committed)
+docker/vendor/
+
+# generated artifacts / secrets (keep the dirs, ignore contents)
+reports/*
+!reports/.gitkeep
+secrets/*
+!secrets/.gitkeep
+
+# Local environment overrides — never commit
+.env
+.env.*
+
+# Phase 15 per-clone installer/runtime state (never commit tokens or local data)
+.orchestrator-cookie/

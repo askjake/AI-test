@@ -1,0 +1,19 @@
+{
+  "schema": "phase14-blueprint-catalog-v1",
+  "blueprints": [
+    {
+      "id": "visible-application-smoke-v1",
+      "file": "visible-application-smoke.json",
+      "title": "Visible application smoke verification",
+      "tags": ["smoke", "visible-state", "bounded", "application"],
+      "target_family": "local-app",
+      "verification_category": "smoke",
+      "purpose": "Seed a bounded application verification plan without connection data or host-specific values.",
+      "source_kind": "curated-template",
+      "owner": "Orchestrator Cookie dashboard maintainers",
+      "approval_state": "approved",
+      "sha256": "f3506a652707f74b9227a3c14656b76a1b4c96cc85b05e34c222eaa27219fa25",
+      "summary": "A safe two-stage pattern for checking initial visible state and one bounded interaction."
+    }
+  ]
+}

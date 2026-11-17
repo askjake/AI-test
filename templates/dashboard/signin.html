@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Sign in — Orchestrator Cookie</title>
+<style>
+:root{color-scheme:light dark;--bg:#07111f;--card:#101c2c;--panel:#14243a;--text:#f4f7fb;--muted:#a9b7ca;--line:#2b405b;--blue:#5aa7ff;--blue2:#1976d2;--warn:#f1c75b;--bad:#ff8b8b}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 10%,#173154 0,var(--bg) 42%);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;place-items:center;padding:28px}
+.shell{width:min(920px,100%);display:grid;grid-template-columns:1.12fr .88fr;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:var(--card);box-shadow:0 24px 70px #0008}.main,.roles{padding:38px}.roles{background:var(--panel);border-left:1px solid var(--line)}
+.eyebrow{color:var(--blue);font-weight:750;letter-spacing:.08em;text-transform:uppercase;font-size:12px}h1{font-size:34px;line-height:1.12;margin:9px 0 12px}h2{font-size:18px;margin:0 0 16px}p{color:var(--muted);margin:0 0 20px}
+.state{display:none;border:1px solid var(--line);border-radius:9px;padding:11px 13px;margin:0 0 18px;background:#0b1727}.state.visible{display:block}.state.bad{border-color:#753d47;color:#ffd8dc}.state.warn{border-color:#735f2f;color:#ffe8a8}
+.button{display:flex;align-items:center;justify-content:center;width:100%;border:0;border-radius:9px;padding:12px 16px;background:var(--blue2);color:white;font-weight:750;font-size:15px;cursor:pointer;text-decoration:none}.button:hover{filter:brightness(1.12)}.button[aria-disabled="true"]{background:#465469;color:#c3ccda;cursor:not-allowed;filter:none}
+.sso-note{font-size:12px;margin:8px 0 20px}.divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:22px 0}.divider:before,.divider:after{content:"";height:1px;flex:1;background:var(--line)}
+details{border:1px solid var(--line);border-radius:10px;background:#0b1727}summary{cursor:pointer;padding:13px 15px;font-weight:700}details>div{padding:0 15px 15px}.owner{font-size:13px;color:var(--warn)}code{background:#06101c;border:1px solid var(--line);padding:2px 5px;border-radius:5px;color:#d6e7ff}label{display:block;font-size:13px;font-weight:700;margin:12px 0 6px}input{width:100%;border:1px solid var(--line);border-radius:8px;background:#06101c;color:var(--text);padding:11px;font:inherit}.secondary{margin-top:10px;background:#345171}.form-status{min-height:22px;font-size:13px;color:var(--bad);margin-top:8px}
+.role{border-top:1px solid var(--line);padding:16px 0}.role:first-of-type{border-top:0}.role strong{display:block;font-size:16px}.role p{font-size:13px;margin:5px 0 0}.foot{font-size:12px;margin-top:20px}
+@media(max-width:760px){.shell{grid-template-columns:1fr}.roles{border-left:0;border-top:1px solid var(--line)}.main,.roles{padding:27px}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <main class="main">
+    <div class="eyebrow">Orchestrator Cookie</div>
+    <h1>Sign in</h1>
+    <p id="provider-intro">Use your configured identity provider for everyday access. Your role is assigned by the server after sign-in.</p>
+    <div id="signin-state" class="state" role="status" aria-live="polite"></div>
+
+    <a id="organization-signin" class="button" href="/api/v1/auth/oidc/start">Sign in with organization account</a>
+    <p id="sso-note" class="sso-note">Checking organization sign-in…</p>
+
+    <div class="divider">owner recovery</div>
+    <details id="bootstrap-access">
+      <summary>Local bootstrap access</summary>
+      <div>
+        <p class="owner">For the clone owner’s setup or recovery use only. This is not the normal sign-in path.</p>
+        <p>On the machine that owns this clone, copy a role-specific credential without displaying it:</p>
+        <p><code>./install.sh access --role viewer --copy</code><br><code>./install.sh access --role operator --copy</code></p>
+        <p>In Windows PowerShell, use <code>./install.ps1</code> with the same arguments.</p>
+        <form id="bootstrap-form">
+          <label for="bootstrap-credential">Paste bootstrap credential</label>
+          <input id="bootstrap-credential" name="credential" type="password" autocomplete="current-password" required minlength="32" maxlength="512">
+          <button class="button secondary" type="submit">Continue with local bootstrap</button>
+          <div id="bootstrap-status" class="form-status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </details>
+    <p class="foot">Credentials are exchanged for an opaque HttpOnly session and are not stored by this page.</p>
+  </main>
+
+  <aside class="roles" aria-label="Access levels">
+    <h2>Access levels</h2>
+    <div class="role"><strong>Viewer</strong><p>Inspect projects, live display, reports, screenshots, and logs.</p></div>
+    <div class="role"><strong>Operator</strong><p>Create, edit, and save projects and specifications; run guarded refinement and approved target preflight; start or stop authorized project work.</p></div>
+    <p class="foot">Bootstrap and identity-provider settings remain local-owner administration tasks. Browser sessions cannot choose or promote their own role.</p>
+  </aside>
+</div>
+<script>
+const stateMessages={
+  "operator-required":["warn","Operator access is required for that action. Sign in with an operator-authorized account or ask an administrator for access."],
+  "expired":["warn","Your session expired. Sign in again to continue."],
+  "denied":["bad","Organization sign-in was denied or your account is not mapped to an application role."],
+  "sso-unavailable":["bad","Organization sign-in is temporarily unavailable. Local bootstrap remains available to the clone owner."],
+  "unauthenticated":["warn","Sign in is required to continue."]
+};
+function showState(){const value=new URLSearchParams(location.search).get("state");const item=stateMessages[value];if(!item)return;const el=document.getElementById("signin-state");el.className="state visible "+item[0];el.textContent=item[1]}
+async function loadConfig(){
+  const button=document.getElementById("organization-signin");const note=document.getElementById("sso-note");
+  try{const response=await fetch("/api/v1/auth/config",{credentials:"same-origin"});if(!response.ok)throw new Error();const config=await response.json();
+    if(config.organization_sign_in){const label=config.provider_label||"organization account";button.href=config.organization_sign_in_url;button.setAttribute("aria-disabled","false");button.textContent="Sign in with "+label;if(config.test_only){document.getElementById("provider-intro").textContent="Use the packaged local test identity to exercise role-aware features. This is not a corporate account.";note.textContent="Test-only Keycloak assigns Viewer or Operator access from its local groups."}else{note.textContent="Your organization determines whether you receive Viewer or Operator access."}}
+    else{button.removeAttribute("href");button.setAttribute("aria-disabled","true");note.textContent="Organization sign-in has not been configured for this clone."}
+    document.getElementById("bootstrap-access").hidden=!config.local_bootstrap_available;
+  }catch(_){button.removeAttribute("href");button.setAttribute("aria-disabled","true");note.textContent="Sign-in configuration is unavailable."}
+}
+document.getElementById("organization-signin").addEventListener("click",event=>{if(event.currentTarget.getAttribute("aria-disabled")==="true")event.preventDefault()});
+document.getElementById("bootstrap-form").addEventListener("submit",async event=>{
+  event.preventDefault();const input=document.getElementById("bootstrap-credential");const status=document.getElementById("bootstrap-status");const credential=input.value;input.value="";status.textContent="Signing in…";
+  try{const response=await fetch("/api/v1/auth/bootstrap/session",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({credential})});if(!response.ok)throw new Error();location.replace("/")}
+  catch(_){status.textContent="That bootstrap credential was not accepted. Copy it again on the clone owner’s machine and retry."}
+});
+showState();loadConfig();
+</script>
+</body>
+</html>

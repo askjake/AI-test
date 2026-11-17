@@ -1,0 +1,59 @@
+# Per-project config template. Copy to tests_specs/<project>/project.yaml and edit.
+#
+# Effective config is merged later-wins:
+#   global config.py defaults  <-  tests_specs/project.yaml (root)  <-  this per-project file
+#
+# NO SECRETS HERE — SSH keys / RDP / VNC passwords live in the read-only secrets/ mount and
+# are referenced by filename from the target block below. `manual_dir` is REQUIRED; every
+# other key is optional.
+
+# Display name for reports (defaults to the directory name).
+name: my-project
+
+# REQUIRED: the project's operating-manual directory, kept OUTSIDE the spec tree. Path is
+# relative to the repo root (or absolute) and MUST contain a master manual.md. A missing
+# manual_dir, or one without manual.md, aborts the project run at config load. The master
+# manual.md is auto-injected into the planner; topic pages load on demand via read_manual_page.
+manual_dir: tests_manuals/my-project
+
+# The project's SINGLE target — opened once before the spec tree is walked and closed once
+# after. A project is one target; specs themselves carry NO target (a spec with a "## Target"
+# section is a load error). `type` is one of: local-app | host-app | ssh-terminal | rdp | vnc. Every
+# other key is a type-specific param handed to the client (host/user/key/app/window/port/
+# via/password_file/...); files named here live in the read-only secrets/ mount.
+target:
+  type: local-app
+  app: xterm -T my-app           # local-app: launch command
+  window: my-app                 # local-app: window title to focus
+  # host-app: app=~/allowed/app.sh, cwd=~/allowed, window=Title, startup_timeout=60
+  # ssh-terminal: host=<allowlisted>, user=<user>, key=<file in secrets/>
+  # rdp:          host=<allowlisted>, user=<user>, password_file=<file in secrets/>
+  # vnc:          host=<allowlisted>, port=5900, via=<user@gateway>, gateway_password_file=<file>
+
+# Host allowlists. These REPLACE (do not merge with) the inherited lists. A target host not
+# listed here is refused (before any connection) for ssh-terminal / rdp / vnc targets.
+ssh_host_allowlist:
+  - build01
+rdp_host_allowlist:
+  - winbox01
+# vnc_host_allowlist:
+#   - vnc-host
+
+# Hierarchical session (always on): ALL of this project's specs run against the ONE target
+# above — opened once, closed once, walked depth-first, each spec in a fresh agent context
+# seeded with a compact digest of earlier specs' outcomes. The first (mother) spec does the
+# connect/login/launch; later specs assume that state. See HIERARCHICAL-CONTEXT-DESIGN.md.
+
+# Resource caps (cost + runaway-loop safety). Override the global defaults; per-project
+# values are still bounded by the same enforcement.
+max_steps: 30
+max_seconds: 1800
+# max_tokens: 4096            # output tokens per model call
+# max_total_tokens: 150000    # cumulative token budget for one test run
+# keep_last_n_screenshots: 3  # recent screenshots kept as images; older become a placeholder
+
+# Cron schedule for this project (falls back to default_cron from config.py if omitted).
+schedule: "0 3 * * *"
+
+# Set false to skip this project entirely (discovery + scheduling).
+enabled: true

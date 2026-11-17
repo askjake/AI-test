@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self'; base-uri 'none'; form-action 'self'">
+  <title>Watch &amp; Learn — Orchestrator Cookie</title>
+  <style>
+    :root{color-scheme:dark;--bg:#10131a;--card:#191e29;--border:#30384a;--text:#edf1f7;--muted:#a9b2c4;--accent:#7cb7ff;--danger:#ff8c8c;--ok:#7fd5a3}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,sans-serif}header{display:flex;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid var(--border);background:var(--card)}header h1{font-size:18px;margin:0}.spacer{flex:1}a{color:var(--accent)}button,select,textarea,input{font:inherit;color:inherit;background:#111722;border:1px solid var(--border);border-radius:6px;padding:8px}button{cursor:pointer}button.primary{background:#235d9f;border-color:#347bc7}button:disabled{cursor:not-allowed;opacity:.48}main{width:min(96vw,1720px);margin:0 auto;padding:22px;display:grid;gap:18px;grid-template-columns:minmax(0,1fr) minmax(280px,340px)}.card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:17px}.wide{grid-column:1}.side{grid-column:2;grid-row:1/span 3}main.canvas-expanded{grid-template-columns:1fr}main.canvas-expanded .wide,main.canvas-expanded .side{grid-column:1}main.canvas-expanded .side{grid-row:auto}.canvas-card:fullscreen{padding:18px;background:var(--card);overflow:auto}.canvas-card:fullscreen .canvas{height:calc(100vh - 165px);min-height:0}h2{font-size:16px;margin:0 0 12px}h3{font-size:14px;margin:16px 0 8px}.muted{color:var(--muted)}.notice{padding:12px;border:1px solid #765f26;background:#2b2718;border-radius:7px}.ok{color:var(--ok)}.danger{color:var(--danger)}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.field{display:grid;gap:5px;margin:10px 0}.field textarea{min-height:82px;resize:vertical}.pill{border:1px solid var(--border);border-radius:999px;padding:3px 8px;font-size:12px}.readiness-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:9px}.readiness-grid .field{margin:0}.readiness-components{display:grid;gap:6px;margin-top:12px}.readiness-component{display:grid;grid-template-columns:minmax(150px,210px) 1fr;gap:10px;border-top:1px solid var(--border);padding-top:6px}.canvas-toolbar{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:0 0 10px}.canvas-toolbar .spacer{min-width:8px}.canvas{height:clamp(420px,62vh,820px);min-height:420px;border:1px dashed #576177;border-radius:8px;display:grid;place-items:center;text-align:center;padding:12px;background:#0e1219;overflow:auto}.canvas.direct-armed{border-style:solid;border-color:var(--ok);box-shadow:0 0 0 2px rgba(127,213,163,.18)}.canvas img{display:block;max-width:100%;height:auto;cursor:default;border:1px solid #455067;user-select:none;-webkit-user-drag:none;touch-action:auto}.canvas.direct-armed img{cursor:crosshair;touch-action:none}.canvas img:focus{outline:3px solid var(--accent);outline-offset:3px}.canvas img.zoomed{max-width:none}.recording-state{font-weight:700}.history{display:grid;gap:8px;max-height:620px;overflow:auto}.history button{text-align:left;width:100%}.draft{white-space:pre-wrap;word-break:break-word;background:#10151e;padding:12px;border-radius:6px;max-height:360px;overflow:auto}.status{min-height:20px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.review-item{border:1px solid var(--border);border-radius:7px;padding:10px;margin:9px 0}.review-item img{max-width:240px;height:auto}.review-item textarea{width:100%;min-height:58px}.warning{border-color:#8b3e3e;background:#2e1818}@media(max-width:900px){main{display:block;width:100%;padding:12px}.card{margin-bottom:15px}.canvas{height:55vh;min-height:340px}.readiness-component{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header>
+  <h1>Watch &amp; Learn</h1>
+  <span class="pill">Operator only</span>
+  <div class="spacer"></div>
+  <a href="/dashboard">Dashboard</a>
+  <button id="signout">Sign out</button>
+</header>
+<main>
+  <section class="card wide">
+    <h2>Demonstration setup</h2>
+    <p class="notice"><strong>Unique OIDC identity required.</strong> Shared bootstrap sign-in can use the ordinary dashboard but cannot create, list, or access Watch &amp; Learn resources.</p>
+    <p class="notice"><strong>No target contact occurs here.</strong> Opening this page, choosing a project, loading capabilities, viewing history, and opening this non-live canvas shell are local metadata actions.</p>
+    <p class="notice"><strong>Staged safety gates.</strong> Connect launches the digest-pinned approved target client paused and without AWS credentials. Local applications remain offline; VNC receives only the exact project-scoped jump-host or target egress. Recording remains unavailable until any login is completed through a saved secret reference and the runner verifies the configured post-login ready-window title. Raw frames are masked before the dashboard receives them.</p>
+    <div class="field"><label for="project">Approved project</label><select id="project"><option value="">Choose a project</option></select></div>
+    <div id="capability" class="muted">Choose a project to load local capability metadata.</div>
+    <section id="readiness-panel" class="review-item" hidden>
+      <h3>Imported-project Watch &amp; Learn readiness</h3>
+      <p class="notice"><strong>Disabled by default.</strong> Preview, validation, save, and the target-free check do not contact the target. Target contact requires a separate, short-lived activation and then the explicit target preflight below.</p>
+      <p id="readiness-summary" class="muted">Inspecting imported-project requirements…</p>
+      <p id="readiness-destination" class="muted"></p>
+      <div class="readiness-grid">
+        <div class="field"><label for="readiness-adapter">Approved adapter</label><select id="readiness-adapter"><option value="">Choose explicitly</option></select></div>
+        <div class="field"><label for="readiness-window">Exact ready-window title</label><input id="readiness-window" maxlength="240" autocomplete="off"></div>
+        <div class="field"><label for="readiness-frame-width">Frame width</label><input id="readiness-frame-width" type="number" min="1" max="8192"></div>
+        <div class="field"><label for="readiness-frame-height">Frame height</label><input id="readiness-frame-height" type="number" min="1" max="8192"></div>
+        <div class="field"><label for="readiness-redact-x">Redaction x</label><input id="readiness-redact-x" type="number" min="0" max="8191"></div>
+        <div class="field"><label for="readiness-redact-y">Redaction y</label><input id="readiness-redact-y" type="number" min="0" max="8191"></div>
+        <div class="field"><label for="readiness-redact-width">Redaction width</label><input id="readiness-redact-width" type="number" min="1" max="8192"></div>
+        <div class="field"><label for="readiness-redact-height">Redaction height</label><input id="readiness-redact-height" type="number" min="1" max="8192"></div>
+        <div class="field readiness-secret"><label for="readiness-password-file">Target password reference</label><input id="readiness-password-file" maxlength="127" autocomplete="off"></div>
+        <div class="field readiness-secret"><label for="readiness-gateway-password-file">Gateway password reference</label><input id="readiness-gateway-password-file" maxlength="127" autocomplete="off"></div>
+        <div class="field readiness-secret"><label for="readiness-known-hosts-file">Known-hosts reference</label><input id="readiness-known-hosts-file" maxlength="127" autocomplete="off"></div>
+      </div>
+      <p class="muted">Only reference names are accepted. Destination, host, port, route, identity, certificate, and network policy are intentionally not editable here.</p>
+      <div class="actions">
+        <button id="readiness-inspect">Refresh inspection</button>
+        <button id="readiness-preview">Preview</button>
+        <button id="readiness-validate">Validate target-free</button>
+        <button id="readiness-save" class="primary">Save confirmed configuration</button>
+        <button id="readiness-check">Run target-free check</button>
+        <button id="readiness-activate">Activate target contact briefly</button>
+      </div>
+      <div id="readiness-components" class="readiness-components"></div>
+    </section>
+    <div class="field"><label for="goal">Operator goal</label><textarea id="goal" maxlength="2000" placeholder="Describe the approved task and intended outcome."></textarea></div>
+    <div class="actions">
+      <button id="create" class="primary" disabled>Create review session</button>
+      <button id="preflight" disabled>Run bounded target preflight</button>
+      <button id="connect" disabled>Connect paused</button>
+      <button id="confirm-session" disabled>Verify ready window</button>
+      <button id="start" disabled>Start capture</button>
+      <button id="pause" disabled>Pause</button>
+      <button id="resume" disabled>Resume</button>
+      <button id="stop" disabled>Stop</button>
+    </div>
+    <p id="status" class="status muted" role="status"></p>
+  </section>
+
+  <aside class="card side">
+    <h2>Your demonstrations</h2>
+    <p id="ownership" class="muted">Ownership scope is derived by the server.</p>
+    <div id="history" class="history"><span class="muted">Loading…</span></div>
+  </aside>
+
+  <section class="card wide canvas-card" id="canvas-card">
+    <div class="canvas-toolbar" aria-label="Canvas view controls"><h2 style="margin:0">Controlled canvas</h2><span class="spacer"></span><button id="canvas-fit" type="button">Fit</button><button id="canvas-zoom-out" type="button" aria-label="Zoom out">−</button><button id="canvas-zoom-in" type="button" aria-label="Zoom in">+</button><span id="canvas-view-status" class="muted" aria-live="polite">Fit · no frame</span><button id="canvas-expand" type="button">Expand workspace</button><button id="canvas-fullscreen" type="button">Fullscreen</button></div>
+    <div class="row"><button id="arm-direct" class="primary" disabled>Arm direct interaction</button><button id="emergency-stop" class="danger" disabled>Pause input now</button><span id="direct-state" class="recording-state muted" role="status">Direct input is disarmed.</span></div>
+    <div class="canvas" id="canvas"><div><strong>Non-live canvas shell</strong><p class="muted">No target is contacted until the explicit Connect action. Unsupported targets remain unavailable.</p></div></div>
+    <div class="actions" id="canvas-actions">
+      <button data-key="TAB" disabled>Tab</button><button data-key="ENTER" disabled>Enter</button><button data-key="ESC" disabled>Escape</button>
+      <button data-scroll="up" disabled>Scroll up</button><button data-scroll="down" disabled>Scroll down</button>
+      <button id="text-intent" disabled>Record text-entry intent (no value)</button>
+    </div>
+    <div class="review-item">
+      <strong>Secure sign-in while paused</strong>
+      <p class="muted">Choose an existing private secret reference or save one below. Saving sends the value once to the dashboard's write-only staging endpoint; the capture action then sends only the reference name. The worker types the private value over stdin, and the journal, screenshots, and model never receive it.</p>
+      <div class="row"><select id="secret-reference"><option value="">Choose saved reference</option></select><button id="enter-secret" disabled>Enter saved secret</button></div>
+      <div class="row"><input id="new-secret-name" maxlength="127" autocomplete="off" placeholder="Reference name"><input id="new-secret-value" type="password" maxlength="1024" autocomplete="new-password" placeholder="Password"><button id="save-secret">Save reference</button></div>
+    </div>
+    <p class="muted">Recorded input is limited to visible pointer actions, allowlisted navigation keys, bounded scrolling, and a semantic non-secret text-entry intent. Ordinary browser-provided text is never relayed.</p>
+  </section>
+
+  <section class="card wide">
+    <h2>Review and learn</h2>
+    <p class="muted">Captured evidence and notes are untrusted review data. The deterministic draft is mandatory; optional model enrichment has no tools or authority and cannot promote or run anything.</p>
+    <div class="actions">
+      <button id="analyze" disabled>Run deterministic analysis</button>
+      <button id="enrich" disabled>Improve draft wording</button>
+      <button id="delete" class="danger" disabled>Delete demonstration</button>
+    </div>
+    <label class="row"><input id="visual-enrichment" type="checkbox" disabled> Include bounded pre-redacted screenshots in this optional Bedrock job (deployment policy must allow it)</label>
+    <h3>Action receipts and annotations</h3><div id="events" class="muted">No captured events.</div>
+    <h3>Evidence and redaction</h3><div id="evidence" class="muted">No evidence.</div>
+    <h3>Model jobs</h3><p class="muted">States: queued, running, completed, failed, expired, stale.</p><div id="jobs" class="muted">No model jobs.</div>
+    <p id="deletion" class="muted"></p>
+    <h3>Latest learned draft</h3>
+    <div id="draft" class="draft muted">No deterministic analysis yet.</div>
+    <div class="field"><label for="specpath">Private draft export path</label><input id="specpath" maxlength="240" value="watch-learn/learned-draft.md"></div>
+    <div class="actions"><button id="validate" disabled>Validate private promotion</button><button id="promote" class="primary" disabled>Promote to private editable draft</button></div>
+    <p class="muted">Promotion stays inside your private Watch &amp; Learn bundle. It does not write shared project authoring storage and has no preflight, run, target, or model authority.</p>
+    <h3>Your private promoted drafts</h3><div id="private-drafts" class="muted">No private promoted drafts.</div>
+  </section>
+</main>
+<script src="/watch-learn-assets/lifecycle.js"></script>
+<script>
+"use strict";
+let auth={csrf_token:null};let capability=null;let readiness=null;let current=null;let pollTimer=null;let capabilityTimer=null;let readinessTimer=null;let preflightRunning=false;let readinessBusy=false;let canvasZoom="fit";let canvasRecord=null;
+let directArmed=false;let actionInFlight=false;let actionQueue=[];let queueWaiters=[];let pointerGesture=null;let pendingClick=null;let wheelBurst=null;let hoverPending=null;let canvasUpdating=false;let canvasLoadPromise=null;let frameTransitionNotice="";let directInputHandlersInstalled=false;const ACTION_QUEUE_LIMIT=32;const DRAG_PATH_LIMIT=32;const KEY_REPEAT_LIMIT=3;const FRAME_LOAD_TIMEOUT_MS=10000;const keyRepeats=new Map();const retiredCanvases=new WeakSet();const frameCoordinator=new WatchLearnLifecycle.FrameCoordinator();
+const $=id=>document.getElementById(id);
+function retireCanvas(image){if(image)retiredCanvases.add(image)}
+function isCurrentCanvas(image){return Boolean(image&&image.isConnected&&image===$("controlled-frame")&&!retiredCanvases.has(image))}
+function publishWatchLearnInitialization(){const ready=typeof WatchLearnLifecycle==="object"&&frameCoordinator instanceof WatchLearnLifecycle.FrameCoordinator&&directArmed===false&&Array.isArray(actionQueue)&&directInputHandlersInstalled;if(!ready)throw new Error("Watch & Learn direct-input initialization is incomplete.");document.documentElement.dataset.watchLearnInitialization="ready";document.dispatchEvent(new Event("watch-learn:ready"))}
+function message(value,bad=false){$("status").textContent=value;$("status").className="status "+(bad?"danger":"muted")}
+async function api(path,options={}){
+  const method=String(options.method||"GET").toUpperCase();
+  const headers={...(options.headers||{})};
+  if(!["GET","HEAD","OPTIONS"].includes(method)&&auth.csrf_token)headers["X-CSRF-Token"]=auth.csrf_token;
+  const response=await fetch("/api/v1"+path,{...options,headers,credentials:"same-origin"});
+  if(response.status===204)return null;
+  const body=await response.json().catch(()=>({}));
+  if(response.status===401){location.replace("/sign-in?state=expired");throw new Error("Sign in required")}
+  if(response.status===403&&(body.detail||{}).code!=="unique_identity_required"){location.replace("/sign-in?state=operator-required");throw new Error("Operator access required")}
+  if(!response.ok){const detail=body.detail||{};const error=new Error(detail.message||response.statusText);error.code=detail.code||"request_failed";error.currentVersion=detail.current_version;throw error}
+  return body;
+}
+function post(path,body){return api(path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)})}
+function setDirectState(value,bad=false){$("direct-state").textContent=value;$("direct-state").className="recording-state "+(bad?"danger":directArmed&&!canvasUpdating?"ok":"muted");$("canvas").classList.toggle("direct-armed",directArmed&&!canvasUpdating)}
+function disarmDirect(reason,bad=false){directArmed=false;pointerGesture=null;keyRepeats.clear();if(pendingClick){clearTimeout(pendingClick.timer);pendingClick=null}if(wheelBurst){clearTimeout(wheelBurst.timer);wheelBurst=null}if(hoverPending){clearTimeout(hoverPending.timer);hoverPending=null}setDirectState(reason||"Direct input is disarmed.",bad);setControls()}
+class ObsoleteCanvasActionError extends Error{constructor(message,disposable=false){super(message);this.name="ObsoleteCanvasActionError";this.disposable=disposable}}
+function handleActionError(error){if(error instanceof ObsoleteCanvasActionError){if(!error.disposable)message(error.message,true);return}failClosed(error)}
+function clearQueuedActions(reason){const queued=actionQueue.splice(0);for(const item of queued)item.reject(new Error(reason||"Queued input was cancelled."));if(!actionInFlight){for(const done of queueWaiters.splice(0))done()}}
+function queueIdle(){return !actionInFlight&&!actionQueue.length?Promise.resolve():new Promise(resolve=>queueWaiters.push(resolve))}
+function failClosed(error){disarmDirect("Direct input stopped: "+error.message,true);clearQueuedActions("Direct input stopped.");message(error.message,true)}
+function actionFrame(){const binding=frameCoordinator.binding();if(!canvasRecord||!binding||canvasUpdating)throw new Error("A fully loaded current controlled frame is required.");return {fields:{schema_version:1,frame_revision:binding.revision,frame_width:binding.width,frame_height:binding.height},binding}}
+function enqueueAction(action,{disposable=false,canvasBinding=null}={}){return new Promise((resolve,reject)=>{if(!current||current.state!=="recording"){reject(new Error("Capture must be recording."));return}if(canvasBinding&&!frameCoordinator.isCurrent(canvasBinding)){reject(new ObsoleteCanvasActionError(disposable?"Obsolete disposable input was discarded.":"The target frame changed before this action was sent; repeat the action on the new frame.",disposable));return}if(disposable&&actionQueue.length){const last=actionQueue[actionQueue.length-1];if(last.disposable&&last.action.kind===action.kind&&last.canvasBinding&&canvasBinding&&last.canvasBinding.generation===canvasBinding.generation){const sameDirection=(a,b)=>a===0||b===0||Math.sign(a)===Math.sign(b);if(action.kind==="wheel"&&sameDirection(last.action.delta_x,action.delta_x)&&sameDirection(last.action.delta_y,action.delta_y)){last.action.delta_x=Math.max(-20,Math.min(20,last.action.delta_x+action.delta_x));last.action.delta_y=Math.max(-20,Math.min(20,last.action.delta_y+action.delta_y));last.action.x=action.x;last.action.y=action.y;resolve(null);return}if(action.kind==="pointer_move"){last.action=action;resolve(null);return}}}if(actionQueue.length>=ACTION_QUEUE_LIMIT){reject(new Error("Direct-input queue limit exceeded."));failClosed(new Error("Direct-input queue overflow; capture stopped."));return}actionQueue.push({action,idempotencyKey:crypto.randomUUID(),resolve,reject,disposable,canvasBinding});void pumpActions()})}
+async function pumpActions(){if(actionInFlight)return;actionInFlight=true;try{while(actionQueue.length){const item=actionQueue.shift();if(item.canvasBinding&&!frameCoordinator.isCurrent(item.canvasBinding)){const error=new ObsoleteCanvasActionError(item.disposable?"Obsolete disposable input was discarded.":"The target frame changed before this action was sent; repeat the action on the new frame.",item.disposable);item.reject(error);continue}try{setDirectState("Sending action…");const result=await post("/demonstrations/"+current.session_id+"/actions",{expected_version:current.version,idempotency_key:item.idempotencyKey,action:item.action});if(!["accepted","executed"].includes(result.receipt.outcome)||result.session.state!=="recording")throw new Error(result.receipt.outcome==="outcome_unknown"?"Action outcome is uncertain; reconciliation is required and no retry was attempted.":"The target rejected or failed the action; direct input stopped.");await showSession(result.session);message("Action receipt: "+result.receipt.outcome+". "+result.receipt.detail);item.resolve(result)}catch(error){item.reject(error);if(current&&["stale_frame_revision","revision_conflict"].includes(error.code)){try{await showSession(await api("/demonstrations/"+encodeURIComponent(current.session_id)))}catch(_refreshError){}}failClosed(error);break}}}finally{actionInFlight=false;if(!actionQueue.length){for(const done of queueWaiters.splice(0))done()}else void pumpActions()}}
+function setControls(){
+  const eligible=Boolean(capability&&capability.identity_eligible);const available=Boolean(capability&&capability.selected.available);
+  const imported=Boolean(capability&&capability.imported_project);const configured=Boolean(readiness&&readiness.configuration_revision);const checked=Boolean(readiness&&readiness.readiness_check_revision);const activated=Boolean(readiness&&readiness.target_contact_activated&&readiness.activation_revision);
+  $("preflight").textContent=imported?"Run activated target preflight":"Run bounded target preflight";
+  $("preflight").disabled=imported?!(eligible&&available&&configured&&checked&&activated&&!preflightRunning):!(current&&current.state==="ready_to_connect"&&eligible&&available&&capability.privacy_ready&&capability.session_proof_configured&&!preflightRunning);
+  $("create").disabled=!(eligible&&capability&&$("goal").value.trim()&&(!imported||configured));
+  $("connect").disabled=!(current&&current.state==="ready_to_connect"&&available&&capability.connect_authorized&&capability.session_proof_configured);
+  $("confirm-session").disabled=!(current&&current.state==="connected_unauthenticated_paused");
+  $("enter-secret").disabled=!(current&&current.state==="connected_unauthenticated_paused"&&$("secret-reference").value);
+  $("start").disabled=!(current&&current.state==="connected_paused");
+  $("pause").disabled=!(current&&current.state==="recording");
+  $("resume").disabled=!(current&&current.state==="paused");
+  $("stop").disabled=!(current&&["recording","paused","connected_paused","connected_unauthenticated_paused"].includes(current.state));
+  $("analyze").disabled=!(current&&["stopped","reviewing","deterministic_ready"].includes(current.state));
+  const deterministic=current&&[...current.analyses].reverse().find(item=>item.kind==="deterministic");
+  $("enrich").disabled=!(deterministic&&capability&&capability.model_enrichment_available);
+  $("visual-enrichment").disabled=!(capability&&capability.visual_enrichment_available);
+  if($("visual-enrichment").disabled)$("visual-enrichment").checked=false;
+  $("validate").disabled=!deterministic;$("promote").disabled=!deterministic;
+  $("delete").disabled=!current;
+  for(const button of document.querySelectorAll("#canvas-actions button"))button.disabled=!(current&&current.state==="recording");
+  $("arm-direct").disabled=!(current&&current.state==="recording"&&canvasRecord&&!canvasUpdating&&!directArmed);
+  $("emergency-stop").disabled=!(current&&current.state==="recording");
+  for(const id of ["readiness-inspect","readiness-preview","readiness-validate","readiness-save"]){$(id).disabled=!imported||readinessBusy}
+  $("readiness-check").disabled=!imported||readinessBusy||!configured;
+  $("readiness-activate").disabled=!imported||readinessBusy||!configured||!checked;
+}
+function discardObsoleteCanvasInput(){
+  let discarded=0,repeat=0;
+  if(hoverPending){clearTimeout(hoverPending.timer);hoverPending=null;discarded+=1}
+  if(wheelBurst){clearTimeout(wheelBurst.timer);wheelBurst=null;discarded+=1}
+  if(pendingClick){clearTimeout(pendingClick.timer);pendingClick=null;repeat+=1}
+  if(pointerGesture){pointerGesture=null;repeat+=1}
+  const partition=WatchLearnLifecycle.partitionObsolete(actionQueue,frameCoordinator,true);actionQueue=partition.keep;
+  for(const item of partition.disposable){discarded+=1;item.resolve(null)}
+  for(const item of partition.meaningful){repeat+=1;item.reject(new ObsoleteCanvasActionError("The target frame changed before this action was sent; repeat the action on the new frame."))}
+  frameTransitionNotice=repeat?" A meaningful unsent action must be repeated on the new frame.":discarded?" Obsolete disposable input was discarded.":"";
+}
+function emptyCanvas(){const root=$("canvas"),old=$("controlled-frame");directArmed=false;retireCanvas(old);root.replaceChildren();canvasRecord=null;canvasUpdating=false;setDirectState("Direct input is disarmed: no current frame.",true);$("canvas-view-status").textContent="Fit · no frame";const empty=document.createElement("div");const title=document.createElement("strong");title.textContent=current?"No accessible frame":"Non-live canvas shell";const note=document.createElement("p");note.className="muted";note.textContent=current?"Connect explicitly to load the controlled frame.":"No target is contacted until Connect paused.";empty.append(title,note);root.append(empty)}
+function renderCanvas(transition){
+  if(transition.kind==="ignored")return Promise.resolve(false);
+  if(transition.kind==="empty"){emptyCanvas();return Promise.resolve(true)}
+  if(transition.kind==="same"){applyCanvasZoom();if(directArmed)setDirectState("Armed and ready on the loaded target frame.");return Promise.resolve(true)}
+  if(transition.kind==="waiting")return canvasLoadPromise||Promise.resolve(false);
+  const root=$("canvas"),identity=transition.identity,token=transition.token,retainDirect=Boolean(directArmed&&current&&current.state==="recording");
+  canvasUpdating=true;discardObsoleteCanvasInput();setDirectState("Waiting for the refreshed target frame to load…");setControls();
+  const image=document.createElement("img");image.alt="Controlled target canvas";image.tabIndex=0;image.draggable=false;installDirectInput(image);
+  const loadPromise=new Promise(resolve=>{
+    let settled=false;const finish=(ok,reason)=>{if(settled)return;settled=true;clearTimeout(timeout);if(!ok){if(frameCoordinator.fail(token)){canvasUpdating=false;disarmDirect(reason||"Image load failed; use Refresh session before rearming.",true);message(reason||"The refreshed target image failed to load.",true)}resolve(false);return}const committed=frameCoordinator.commit(token,image.naturalWidth,image.naturalHeight);if(committed.kind==="obsolete"){resolve(false);return}if(committed.kind!=="committed"){canvasUpdating=false;disarmDirect("Image metadata did not match the loaded pixels; explicit recovery is required.",true);message("The refreshed target image dimensions did not match its frame contract.",true);resolve(false);return}const old=$("controlled-frame");retireCanvas(old);root.replaceChildren(image);image.id="controlled-frame";canvasRecord=identity.record;canvasUpdating=false;applyCanvasZoom();if(retainDirect&&directArmed){image.focus({preventScroll:true});setDirectState("New frame loaded and ready."+frameTransitionNotice,Boolean(frameTransitionNotice&&frameTransitionNotice.includes("meaningful")))}else setDirectState("Direct input is disarmed.");frameTransitionNotice="";setControls();resolve(true)};
+    const timeout=setTimeout(()=>finish(false,"The refreshed target image timed out; explicit recovery is required."),FRAME_LOAD_TIMEOUT_MS);
+    image.addEventListener("load",()=>finish(true),{once:true});image.addEventListener("error",()=>finish(false,"The refreshed target image failed to load; explicit recovery is required."),{once:true});
+    image.src="/api/v1/demonstrations/"+encodeURIComponent(identity.sessionId)+"/evidence/"+encodeURIComponent(identity.evidenceId)+"?revision="+identity.revision;
+    if(image.complete)queueMicrotask(()=>{if(image.naturalWidth>0)finish(true);else finish(false,"The cached target image could not be decoded; explicit recovery is required.")});
+  });
+  canvasLoadPromise=loadPromise;void loadPromise.finally(()=>{if(canvasLoadPromise===loadPromise)canvasLoadPromise=null});
+  return loadPromise;
+}
+function canvasPoint(image,event){const bounds=image.getBoundingClientRect();if(bounds.width<=0||bounds.height<=0)throw new Error("Controlled frame geometry is unavailable.");const localX=event.clientX-bounds.left,localY=event.clientY-bounds.top;if(localX<0||localY<0||localX>bounds.width||localY>bounds.height)throw new Error("Pointer is outside the controlled frame.");return {x:Math.max(0,Math.min(canvasRecord.width-1,Math.floor(localX*canvasRecord.width/bounds.width))),y:Math.max(0,Math.min(canvasRecord.height-1,Math.floor(localY*canvasRecord.height/bounds.height)))}}
+function guardedCanvasPoint(image,event){try{return canvasPoint(image,event)}catch(error){disarmDirect(error.message,true);message(error.message+" No input was dispatched.",true);return null}}
+function pointerButton(button){return button===0?"left":button===1?"middle":button===2?"right":null}
+function queueWheelBurst(action,binding){if(wheelBurst&&wheelBurst.binding.generation===binding.generation){wheelBurst.action.delta_x=Math.max(-20,Math.min(20,wheelBurst.action.delta_x+action.delta_x));wheelBurst.action.delta_y=Math.max(-20,Math.min(20,wheelBurst.action.delta_y+action.delta_y));wheelBurst.action.x=action.x;wheelBurst.action.y=action.y;clearTimeout(wheelBurst.timer)}else wheelBurst={action,binding,timer:null};wheelBurst.timer=setTimeout(()=>{const pending=wheelBurst;wheelBurst=null;if(pending&&(pending.action.delta_x||pending.action.delta_y))void enqueueAction(pending.action,{disposable:true,canvasBinding:pending.binding}).catch(handleActionError)},100)}
+function installDirectInput(image){image.addEventListener("contextmenu",event=>{if(directArmed&&!canvasUpdating&&document.activeElement===image)event.preventDefault()});image.addEventListener("dragstart",event=>event.preventDefault());image.addEventListener("pointerdown",event=>{if(!directArmed||canvasUpdating||document.activeElement!==image)return;const button=pointerButton(event.button);if(!button)return;event.preventDefault();const point=guardedCanvasPoint(image,event);if(!point)return;if(hoverPending){clearTimeout(hoverPending.timer);hoverPending=null}const frame=actionFrame();image.setPointerCapture(event.pointerId);pointerGesture={pointerId:event.pointerId,button,start:point,last:point,path:[],frame,startedAt:performance.now()}});image.addEventListener("pointermove",event=>{if(!directArmed||canvasUpdating||document.activeElement!==image)return;const point=guardedCanvasPoint(image,event);if(!point)return;if(pointerGesture&&pointerGesture.pointerId===event.pointerId){event.preventDefault();const dx=point.x-pointerGesture.last.x,dy=point.y-pointerGesture.last.y;if((dx*dx+dy*dy)>=16&&pointerGesture.path.length<DRAG_PATH_LIMIT){pointerGesture.path.push(point);pointerGesture.last=point}return}if(hoverPending)clearTimeout(hoverPending.timer);const snapshot={point,frame:actionFrame(),timer:null};snapshot.timer=setTimeout(()=>{if(hoverPending===snapshot){hoverPending=null;void enqueueAction({kind:"pointer_move",...snapshot.frame.fields,...snapshot.point,during_drag:false},{disposable:true,canvasBinding:snapshot.frame.binding}).catch(handleActionError)}},180);hoverPending=snapshot});image.addEventListener("pointerup",event=>{if(!directArmed||canvasUpdating||!pointerGesture||pointerGesture.pointerId!==event.pointerId)return;event.preventDefault();const gesture=pointerGesture;pointerGesture=null;if(image.hasPointerCapture(event.pointerId))image.releasePointerCapture(event.pointerId);const end=guardedCanvasPoint(image,event);if(!end)return;const moved=Math.hypot(end.x-gesture.start.x,end.y-gesture.start.y);if(moved>=4||gesture.path.length){void enqueueAction({kind:"drag",...gesture.frame.fields,button:gesture.button,start_x:gesture.start.x,start_y:gesture.start.y,end_x:end.x,end_y:end.y,path:gesture.path.slice(0,DRAG_PATH_LIMIT)},{canvasBinding:gesture.frame.binding}).catch(handleActionError);return}if(gesture.button!=="left"){void enqueueAction({kind:"click",...gesture.frame.fields,...end,button:gesture.button,clicks:1},{canvasBinding:gesture.frame.binding}).catch(handleActionError);return}if(pendingClick&&performance.now()-pendingClick.at<350&&pendingClick.frame.binding.generation===gesture.frame.binding.generation&&Math.hypot(end.x-pendingClick.point.x,end.y-pendingClick.point.y)<6){clearTimeout(pendingClick.timer);pendingClick=null;void enqueueAction({kind:"click",...gesture.frame.fields,...end,button:"left",clicks:2},{canvasBinding:gesture.frame.binding}).catch(handleActionError)}else{const snapshot={point:end,frame:gesture.frame,at:performance.now(),timer:null};snapshot.timer=setTimeout(()=>{if(pendingClick===snapshot){pendingClick=null;void enqueueAction({kind:"click",...snapshot.frame.fields,...snapshot.point,button:"left",clicks:1},{canvasBinding:snapshot.frame.binding}).catch(handleActionError)}},280);pendingClick=snapshot}});const cancel=event=>{if(pointerGesture&&pointerGesture.pointerId===event.pointerId){pointerGesture=null;disarmDirect("Pointer capture was lost; the incomplete gesture was not dispatched.",true)}};image.addEventListener("pointercancel",cancel);image.addEventListener("lostpointercapture",event=>{if(pointerGesture)cancel(event)});image.addEventListener("wheel",event=>{if(!directArmed||canvasUpdating||document.activeElement!==image)return;event.preventDefault();const point=guardedCanvasPoint(image,event);if(!point)return;const normalize=value=>value===0?0:Math.max(-20,Math.min(20,Math.sign(value)*Math.max(1,Math.ceil(Math.abs(value)/80))));const frame=actionFrame();queueWheelBurst({kind:"wheel",...frame.fields,...point,delta_x:normalize(event.deltaX),delta_y:normalize(event.deltaY)},frame.binding)},{passive:false});image.addEventListener("keydown",event=>handleCanvasKey(event,image));image.addEventListener("keyup",event=>{if(directArmed&&document.activeElement===image){keyRepeats.delete(event.code);event.preventDefault()}});for(const blocked of ["beforeinput","compositionstart","compositionupdate","compositionend","paste","drop"]){image.addEventListener(blocked,event=>{if(directArmed){event.preventDefault();message("Literal text, composition, paste, and drop data are not captured.",true)}})}image.addEventListener("blur",()=>{if(!isCurrentCanvas(image))return;if(directArmed){clearQueuedActions("Canvas focus was lost.");disarmDirect("Canvas focus was lost; direct input is paused locally.",true)}})}
+function handleCanvasKey(event,image){if(!directArmed||canvasUpdating||document.activeElement!==image||event.isComposing)return;const keys={Enter:"ENTER",Tab:"TAB",Escape:"ESC",ArrowUp:"UP",ArrowDown:"DOWN",ArrowLeft:"LEFT",ArrowRight:"RIGHT",Home:"HOME",End:"END",PageUp:"PAGEUP",PageDown:"PAGEDOWN",Backspace:"BACKSPACE",Delete:"DELETE",KeyA:"A"};const key=keys[event.code];const modifiers=[];if(event.ctrlKey)modifiers.push("CTRL");if(event.shiftKey)modifiers.push("SHIFT");const valid=Boolean(key)&&!event.altKey&&!event.metaKey&&(!modifiers.length||(modifiers.length===1&&((modifiers[0]==="SHIFT"&&key==="TAB")||(modifiers[0]==="CTRL"&&key==="A"))));if(!valid){if(event.ctrlKey||event.altKey||event.metaKey){event.preventDefault();message("That browser or operating-system shortcut is not relayed.",true)}return}event.preventDefault();const count=(keyRepeats.get(event.code)||0)+1;if(event.repeat&&count>KEY_REPEAT_LIMIT)return;keyRepeats.set(event.code,count);const frame=actionFrame();void enqueueAction({schema_version:1,kind:"key",key,phase:"press",modifiers,repeat:1},{canvasBinding:frame.binding}).catch(handleActionError)}
+function applyCanvasZoom(){const image=$("controlled-frame");if(!image||!canvasRecord)return;if(canvasZoom==="fit"){image.classList.remove("zoomed");image.style.width="";$("canvas-view-status").textContent="Fit · "+canvasRecord.width+"×"+canvasRecord.height}else{image.classList.add("zoomed");image.style.width=Math.round(canvasRecord.width*canvasZoom)+"px";$("canvas-view-status").textContent=Math.round(canvasZoom*100)+"% · "+canvasRecord.width+"×"+canvasRecord.height}}
+function changeCanvasZoom(delta){const currentZoom=canvasZoom==="fit"?1:Number(canvasZoom);canvasZoom=Math.max(.5,Math.min(2,currentZoom+delta));applyCanvasZoom()}
+$("canvas-fit").addEventListener("click",()=>{canvasZoom="fit";applyCanvasZoom()});
+$("canvas-zoom-out").addEventListener("click",()=>changeCanvasZoom(-.25));
+$("canvas-zoom-in").addEventListener("click",()=>changeCanvasZoom(.25));
+$("canvas-expand").addEventListener("click",()=>{const main=document.querySelector("main");const expanded=main.classList.toggle("canvas-expanded");$("canvas-expand").textContent=expanded?"Restore workspace":"Expand workspace"});
+$("canvas-fullscreen").addEventListener("click",async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $("canvas-card").requestFullscreen()}catch(error){message("Fullscreen is unavailable in this browser.",true)}});
+document.addEventListener("fullscreenchange",()=>{$("canvas-fullscreen").textContent=document.fullscreenElement?"Exit fullscreen":"Fullscreen"});
+async function showSession(session){
+  const transition=frameCoordinator.select(session);if(transition.kind==="ignored"){message("An older session response was ignored; the current canvas was retained.");return false}current=session;if(session.state!=="recording"&&directArmed)disarmDirect("Direct input is disarmed because capture is not recording.");message("Session "+session.session_id.slice(0,12)+" · "+session.state+" · version "+session.version);
+  if(session.state==="reconciliation_required")message("Reconciliation required: an action outcome is unknown. Capture is stopped; review receipts and do not retry.",true);
+  $("ownership").textContent=session.ownership_notice;
+  const latest=[...session.analyses].reverse()[0];renderDraft(latest);
+  renderReview();renderPrivateDrafts();setControls();pollJobs();await renderCanvas(transition);return true;
+}
+function renderDraft(draft){
+  const root=$("draft");root.replaceChildren();if(!draft){root.textContent="No deterministic analysis yet.";return}
+  const title=document.createElement("h3");title.textContent=draft.title+" · "+draft.kind+" · confidence "+draft.confidence;root.append(title);
+  const goal=document.createElement("p");goal.textContent=draft.goal;root.append(goal);
+  const list=document.createElement("ol");for(const step of draft.steps){const item=document.createElement("li");item.textContent=step.instruction+" ["+step.confidence+"]";list.append(item)}root.append(list);
+  if(draft.assertions.length){const heading=document.createElement("strong");heading.textContent="Assertions";root.append(heading);const assertions=document.createElement("ul");for(const value of draft.assertions){const item=document.createElement("li");item.textContent=value;assertions.append(item)}root.append(assertions)}
+  if(draft.gaps.length){const gaps=document.createElement("p");gaps.className="danger";gaps.textContent="Review gaps: "+draft.gaps.join(" ");root.append(gaps)}
+}
+function renderPrivateDrafts(){
+  const root=$("private-drafts");root.replaceChildren();
+  if(!current||!current.private_drafts.length){root.textContent="No private promoted drafts.";return}
+  for(const draft of current.private_drafts){
+    const box=document.createElement("div");box.className="review-item";
+    const heading=document.createElement("p");heading.textContent="Private draft "+draft.draft_id.slice(0,12)+" · version "+draft.draft_version+" · authority: "+draft.authority;box.append(heading);
+    const title=document.createElement("input");title.maxLength=160;title.value=draft.content.title;title.title="Draft title";box.append(title);
+    const goal=document.createElement("textarea");goal.maxLength=2000;goal.value=draft.content.goal;goal.title="Draft goal";box.append(goal);
+    const setup=document.createElement("textarea");setup.maxLength=4000;setup.value=draft.content.setup||"";setup.title="Draft setup";box.append(setup);
+    const assertions=document.createElement("textarea");assertions.value=(draft.content.assertions||[]).join("\n");assertions.title="One assertion per line";box.append(assertions);
+    const save=document.createElement("button");save.textContent="Save private draft revision";save.addEventListener("click",async()=>{try{const result=await api("/demonstrations/"+current.session_id+"/private-drafts/"+draft.draft_id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({expected_version:current.version,expected_draft_version:draft.draft_version,content:{title:title.value,goal:goal.value,setup:setup.value||null,assertions:assertions.value.split("\n").map(value=>value.trim()).filter(Boolean)}})});showSession(result.session);message("Saved private draft version "+result.draft.draft_version+".")}catch(error){message(error.message,true)}});
+    const download=document.createElement("a");download.textContent="Export private draft";download.href="/api/v1/demonstrations/"+encodeURIComponent(current.session_id)+"/private-drafts/"+encodeURIComponent(draft.draft_id)+"/export";download.setAttribute("download","");
+    const actions=document.createElement("div");actions.className="actions";actions.append(save,download);box.append(actions);root.append(box);
+  }
+}
+function renderReview(){
+  const events=$("events");events.replaceChildren();
+  if(!current||!current.journals.length){events.textContent="No captured events."}else for(const journal of current.journals){const box=document.createElement("div");box.className="review-item";const receipt=current.receipts.find(item=>item.event_id===journal.event_id);const summary=document.createElement("p");summary.textContent=journal.intent.summary+" — receipt: "+(receipt?receipt.outcome:"pending");box.append(summary);if(receipt&&receipt.outcome==="outcome_unknown")box.classList.add("warning");if(journal.intent.kind==="secret_text"){const protectedNote=document.createElement("p");protectedNote.className="muted";protectedNote.textContent="Protected login event: no annotation, evidence, reference name, or learned step is retained.";box.append(protectedNote);events.append(box);continue}const old=current.annotations.find(item=>item.event_id===journal.event_id);const control=document.createElement("input");control.maxLength=160;control.placeholder="Visible control label (optional)";control.value=old&&old.control_label||"";const note=document.createElement("textarea");note.maxLength=1000;note.placeholder="What did this action accomplish? Credentials prohibited.";note.value=old?old.note:"";const result=document.createElement("input");result.maxLength=500;result.placeholder="Expected visible result (optional)";result.value=old&&old.expected_result||"";const variable=document.createElement("input");variable.maxLength=80;variable.placeholder="Variable name, e.g. account_name (optional)";variable.value=old&&old.variable_name||"";const save=document.createElement("button");save.textContent="Save semantic annotation";save.disabled=!["stopped","reviewing","deterministic_ready"].includes(current.state);save.addEventListener("click",async()=>{try{showSession(await post("/demonstrations/"+current.session_id+"/annotations",{expected_version:current.version,event_id:journal.event_id,note:note.value,control_label:control.value||null,expected_result:result.value||null,variable_name:variable.value||null}))}catch(error){message(error.message,true)}});box.append(control,note,result,variable,save);events.append(box)}
+  const evidence=$("evidence");evidence.replaceChildren();
+  if(!current||!current.evidence.length){evidence.textContent="No evidence."}else for(const record of current.evidence){const box=document.createElement("div");box.className="review-item";const title=document.createElement("p");title.textContent=record.evidence_id.slice(0,12)+" · "+record.access_state+(record.redacted_at?" · redacted":"");box.append(title);if(record.access_state==="available"){const image=document.createElement("img");image.alt="Owner evidence preview";image.src="/api/v1/demonstrations/"+current.session_id+"/evidence/"+record.evidence_id+"?revision="+record.sha256;box.append(image);const fields=[];for(const name of ["x","y","width","height"]){const input=document.createElement("input");input.type="number";input.min=name==="width"||name==="height"?"1":"0";input.value=name==="width"?String(record.width):name==="height"?String(record.height):"0";input.title=name;input.placeholder=name;fields.push(input);box.append(input)}const redact=document.createElement("button");redact.textContent="Apply irreversible redaction";redact.addEventListener("click",async()=>{try{showSession(await post("/demonstrations/"+current.session_id+"/evidence/"+record.evidence_id+"/redact",{expected_version:current.version,regions:[{x:+fields[0].value,y:+fields[1].value,width:+fields[2].value,height:+fields[3].value}]}))}catch(error){message(error.message,true)}});box.append(redact)}evidence.append(box)}
+  renderJobs();
+}
+function renderJobs(){const root=$("jobs");root.replaceChildren();if(!current||!current.model_jobs.length){root.textContent="No model jobs.";return}for(const job of current.model_jobs){const line=document.createElement("p");line.textContent=job.job_id.slice(0,12)+" · "+job.state+(job.error_code?" · "+job.error_code:"");root.append(line)}}
+function pollJobs(){if(pollTimer)clearTimeout(pollTimer);if(!current)return;const active=current.model_jobs.filter(job=>["queued","running"].includes(job.state));if(!active.length)return;pollTimer=setTimeout(async()=>{try{for(const job of active)await api("/demonstrations/"+current.session_id+"/analysis-jobs/"+job.job_id);showSession(await api("/demonstrations/"+current.session_id))}catch(error){message(error.message,true)}},1000)}
+async function sendAction(action){try{return await enqueueAction({schema_version:1,...action})}catch(error){message(error.message,true);return null}}
+async function refreshCurrentAfterConnectFailure(error){const selected=current;if(selected){try{showSession(await api("/demonstrations/"+encodeURIComponent(selected.session_id)));await history()}catch(_refreshError){}}message(error.message,true)}
+async function history(){
+  let items;try{items=await api("/demonstrations")}catch(error){const root=$("history");root.textContent=error.message;root.className="history danger";return}const root=$("history");root.replaceChildren();
+  if(!items.length){const empty=document.createElement("span");empty.className="muted";empty.textContent="No demonstrations yet.";root.append(empty);return}
+  for(const item of items){const button=document.createElement("button");button.type="button";button.textContent=item.project_name+" · "+item.state+" · "+item.updated_at;button.addEventListener("click",async()=>await showSession(await api("/demonstrations/"+encodeURIComponent(item.session_id))));root.append(button)}
+}
+async function loadProjects(){
+  const projects=await api("/projects");for(const item of projects){const option=document.createElement("option");option.value=item.name;option.textContent=item.name;$("project").append(option)}
+}
+async function loadSecrets(){const options=await api("/authoring/wizard/target-options");const select=$("secret-reference");while(select.options.length>1)select.remove(1);for(const name of options.password_references){const option=document.createElement("option");option.value=name;option.textContent=name;select.append(option)}setControls()}
+function preflightDeadline(value){if(!value)return "";const parsed=new Date(value);return Number.isNaN(parsed.getTime())?value:parsed.toLocaleTimeString()}
+function readinessNumber(id){const value=Number($(id).value);if(!Number.isSafeInteger(value))throw new Error("Every frame and redaction coordinate must be a whole number.");return value}
+function readinessDraft(){
+  if(!readiness)throw new Error("Inspect the imported project first.");
+  const references=[];for(const [field,id] of [["password_file","readiness-password-file"],["gateway_password_file","readiness-gateway-password-file"],["route_known_hosts_file","readiness-known-hosts-file"]]){const reference_name=$(id).value.trim();if(reference_name)references.push({field,reference_name})}
+  return {schema_version:1,adapter:$("readiness-adapter").value,ready_window:$("readiness-window").value.trim(),frame_width:readinessNumber("readiness-frame-width"),frame_height:readinessNumber("readiness-frame-height"),redaction_regions:[{x:readinessNumber("readiness-redact-x"),y:readinessNumber("readiness-redact-y"),width:readinessNumber("readiness-redact-width"),height:readinessNumber("readiness-redact-height")}],secret_references:references,expected_project_revision:readiness.project_revision,expected_target_revision:readiness.base_target_revision}
+}
+function renderReadiness(value){
+  readiness=value;const panel=$("readiness-panel");panel.hidden=!value||!value.workflow_required;if(panel.hidden){setControls();return}
+  const adapter=$("readiness-adapter"),selected=value.configuration&&value.configuration.adapter||adapter.value;while(adapter.options.length>1)adapter.remove(1);for(const name of value.approved_adapters){const option=document.createElement("option");option.value=name;option.textContent=name;adapter.append(option)}adapter.value=selected;
+  if(value.configuration){const configuration=value.configuration;$("readiness-window").value=configuration.ready_window;$("readiness-frame-width").value=configuration.frame_width;$("readiness-frame-height").value=configuration.frame_height;const region=configuration.redaction_regions[0];if(region){$("readiness-redact-x").value=region.x;$("readiness-redact-y").value=region.y;$("readiness-redact-width").value=region.width;$("readiness-redact-height").value=region.height}const references=Object.fromEntries(configuration.secret_references.map(item=>[item.field,item.reference_name]));$("readiness-password-file").value=references.password_file||"";$("readiness-gateway-password-file").value=references.gateway_password_file||"";$("readiness-known-hosts-file").value=references.route_known_hosts_file||""}
+  const required=new Set(value.secret_references.map(item=>item.field));for(const [field,id] of [["password_file","readiness-password-file"],["gateway_password_file","readiness-gateway-password-file"],["route_known_hosts_file","readiness-known-hosts-file"]]){$(id).closest(".readiness-secret").hidden=!required.has(field)}
+  const state=value.connect_authorized?"Connect authorized":value.target_contact_activated?"Target contact activated; bounded preflight still required":value.readiness_checked?"Target-free check passed; activation required":value.configuration_revision?"Saved; target-free check required":"Configuration required";
+  $("readiness-summary").textContent=state+". Project revision "+value.project_revision.slice(0,12)+"; target policy "+value.base_target_revision.slice(0,12)+(value.activation_expires_at?"; activation expires "+preflightDeadline(value.activation_expires_at):"")+".";
+  $("readiness-destination").textContent=value.destination_policy;
+  const root=$("readiness-components");root.replaceChildren();for(const component of value.components){const row=document.createElement("div");row.className="readiness-component";const name=document.createElement("strong");name.textContent=component.key+" · "+component.state;name.className=component.state==="ready"||component.state==="not-required"?"ok":component.state==="invalid"?"danger":"muted";const detail=document.createElement("span");detail.textContent=component.detail;row.append(name,detail);root.append(row)}
+  if(readinessTimer)clearTimeout(readinessTimer);readinessTimer=null;if(value.activation_expires_at){const delay=new Date(value.activation_expires_at).getTime()-Date.now()+250;if(Number.isFinite(delay)&&delay>=0&&delay<=2147483647)readinessTimer=setTimeout(()=>{if($("project").value===value.project_name)void refreshReadiness(value.project_name)},delay)}setControls()
+}
+async function refreshReadiness(name){renderReadiness(await api("/watch-learn/readiness/"+encodeURIComponent(name)));return readiness}
+async function readinessMutation(action){const name=$("project").value;if(!name)return;readinessBusy=true;setControls();try{let result;if(action==="inspect")result=await api("/watch-learn/readiness/"+encodeURIComponent(name));else if(action==="preview"||action==="validate")result=await post("/watch-learn/readiness/"+encodeURIComponent(name)+"/"+action,readinessDraft());else if(action==="save")result=await api("/watch-learn/readiness/"+encodeURIComponent(name)+"/configuration",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({...readinessDraft(),confirm_security_values:true})});else if(action==="check")result=await post("/watch-learn/readiness/"+encodeURIComponent(name)+"/check",{configuration_revision:readiness.configuration_revision});else if(action==="activate")result=await post("/watch-learn/readiness/"+encodeURIComponent(name)+"/activate",{configuration_revision:readiness.configuration_revision,readiness_check_revision:readiness.readiness_check_revision,confirm_target_contact:true});renderReadiness(result);await loadCapability(name);message(action==="activate"?"Target contact is activated for a short window; it has not occurred yet.":action==="check"?"Target-free readiness check passed. No target was contacted.":action==="save"?"Saved owner-scoped readiness configuration. Connect remains disabled.":action+" completed without target contact.")}catch(error){message(error.message,true)}finally{readinessBusy=false;setControls()}}
+function armCapabilityExpiry(name,value){if(capabilityTimer)clearTimeout(capabilityTimer);capabilityTimer=null;if(!value)return;const delay=new Date(value).getTime()-Date.now()+250;if(!Number.isFinite(delay)||delay<0||delay>2147483647)return;capabilityTimer=setTimeout(async()=>{if($("project").value!==name)return;try{await loadCapability(name);message("The readiness check expired. Run it again immediately before Connect.",true)}catch(error){message(error.message,true)}},delay)}
+async function loadCapability(name){
+  capability=await api("/demonstrations/capabilities?project_name="+encodeURIComponent(name));$("ownership").textContent=capability.ownership_notice;const reasons=[];if(!capability.identity_eligible)reasons.push(capability.ownership_notice);if(capability.readiness_configuration_required)reasons.push("Imported-project readiness configuration must be explicitly saved.");if(capability.imported_project&&!capability.readiness_check_passed)reasons.push("The saved configuration requires a target-free readiness check.");if(capability.imported_project&&!capability.target_contact_activated)reasons.push("Target contact is not activated.");if(!capability.privacy_ready)reasons.push(capability.privacy_notice);if(!capability.selected.available)reasons.push(capability.selected.detail);if(!capability.connect_authorized)reasons.push(capability.connect_notice);if(!capability.session_proof_configured)reasons.push(capability.session_proof_notice);const deadline=preflightDeadline(capability.preflight_expires_at);$("capability").textContent=reasons.length?"Not ready: "+[...new Set(reasons)].join(" "):"Ready to connect paused"+(deadline?" until "+deadline:"")+". "+capability.session_proof_notice;$("capability").className=reasons.length?"danger":"ok";armCapabilityExpiry(name,capability.preflight_expires_at);setControls();return capability;
+}
+$("project").addEventListener("change",async()=>{
+  if(capabilityTimer)clearTimeout(capabilityTimer);if(readinessTimer)clearTimeout(readinessTimer);capabilityTimer=null;readinessTimer=null;capability=null;readiness=null;current=null;$("readiness-panel").hidden=true;setControls();const name=$("project").value;if(!name){$("capability").textContent="Choose a project to load local capability metadata.";return}
+  try{await refreshReadiness(name);await loadCapability(name)}catch(error){message(error.message,true)}setControls();
+});
+$("goal").addEventListener("input",setControls);
+for(const action of ["inspect","preview","validate","save","check","activate"]){$("readiness-"+action).addEventListener("click",()=>readinessMutation(action))}
+$("preflight").addEventListener("click",async()=>{const name=$("project").value;if(!name)return;preflightRunning=true;setControls();message("Running the explicit bounded target preflight…");try{let result;if(capability.imported_project){result=await post("/watch-learn/readiness/"+encodeURIComponent(name)+"/target-preflight",{configuration_revision:readiness.configuration_revision,activation_revision:readiness.activation_revision});await refreshReadiness(name)}else{const authored=await api("/projects/"+encodeURIComponent(name)+"/authoring/project");result=await post("/authoring/wizard/target-probes",{project:authored.document})}await loadCapability(name);if(capability.connect_authorized){message("Bounded target preflight passed. Connect before "+preflightDeadline(result.expires_at)+".")}else{const failed=result.checks.filter(item=>item.status==="failed").map(item=>item.stage);message("Target preflight completed, but required launch gates are not ready"+(failed.length?": "+failed.join(", "):"."),true)}}catch(error){message(error.message,true)}finally{preflightRunning=false;setControls()}});
+$("create").addEventListener("click",async()=>{try{showSession(await post("/demonstrations",{project_name:capability.project_name,project_revision:capability.project_revision,target_revision:capability.target_revision,privacy_revision:capability.privacy_revision,readiness_configuration_revision:capability.readiness_configuration_revision,operator_goal:$("goal").value.trim()}));await history()}catch(error){message(error.message,true)}});
+$("connect").addEventListener("click",async()=>{try{showSession(await post("/demonstrations/"+current.session_id+"/connect",{expected_version:current.version,project_revision:current.project_revision,target_revision:current.target_revision,privacy_revision:current.privacy_revision}))}catch(error){await refreshCurrentAfterConnectFailure(error)}});
+$("confirm-session").addEventListener("click",async()=>{try{showSession(await post("/demonstrations/"+current.session_id+"/session/confirm",{expected_version:current.version}));message("Configured post-login ready window verified by the runner. Capture is still paused.")}catch(error){message(error.message,true)}});
+$("secret-reference").addEventListener("change",setControls);
+$("enter-secret").addEventListener("click",()=>sendAction({kind:"secret_text",purpose:"establish-approved-session",secret_reference:$("secret-reference").value}));
+$("save-secret").addEventListener("click",async()=>{const name=$("new-secret-name").value.trim(),password=$("new-secret-value").value;if(!name||!password){message("Enter a safe reference name and password.",true);return}try{await post("/authoring/wizard/passwords",{kind:"application",reference_name:name,password,overwrite:false});$("new-secret-value").value="";await loadSecrets();$("secret-reference").value=name;setControls();message("Saved the application secret reference. Its value was cleared from the form.")}catch(error){$("new-secret-value").value="";message(error.message,true)}});
+async function captureTransition(action){if(["pause","stop"].includes(action)){disarmDirect("Direct input stopped locally; waiting for the current receipt.");clearQueuedActions("Capture transition cancelled queued input.");await queueIdle()}try{showSession(await post("/demonstrations/"+current.session_id+"/capture/"+action,{expected_version:current.version}));await history()}catch(error){failClosed(error)}}
+for(const action of ["start","pause","resume","stop"]){$(action).addEventListener("click",()=>captureTransition(action))}
+$("arm-direct").addEventListener("click",()=>{if(!current||current.state!=="recording"||!canvasRecord||canvasUpdating)return;directArmed=true;setDirectState("Armed and ready on the focused target canvas.");const image=$("controlled-frame");if(image)image.focus({preventScroll:true});setControls()});
+$("emergency-stop").addEventListener("click",()=>captureTransition("pause"));
+for(const button of document.querySelectorAll("[data-key]")){button.addEventListener("click",()=>sendAction({kind:"key",key:button.dataset.key}))}
+for(const button of document.querySelectorAll("[data-scroll]")){button.addEventListener("click",()=>sendAction({kind:"scroll",direction:button.dataset.scroll,amount:3}))}
+$("text-intent").addEventListener("click",()=>sendAction({kind:"text_intent",purpose:"enter-approved-nonsecret-value"}));
+$("analyze").addEventListener("click",async()=>{try{showSession(await post("/demonstrations/"+current.session_id+"/analyses/deterministic",{expected_version:current.version}));await history()}catch(error){message(error.message,true)}});
+$("enrich").addEventListener("click",async()=>{const draft=[...current.analyses].reverse().find(item=>item.kind==="deterministic");const includeVisual=$("visual-enrichment").checked;try{const job=await post("/demonstrations/"+current.session_id+"/analyses/model",{expected_version:current.version,deterministic_analysis_id:draft.analysis_id,include_visual_evidence:includeVisual});current.model_jobs.push(job);renderJobs();pollJobs();message("Model enrichment job "+job.job_id.slice(0,12)+" is "+job.state+". Deterministic draft remains reviewable."+(includeVisual?" Only bounded pre-redacted frames were included.":""))}catch(error){message(error.message,true)}});
+$("delete").addEventListener("click",async()=>{if(!current||!confirm("Permanently delete this demonstration, evidence, analyses, and drafts?"))return;const sid=current.session_id;try{await api("/demonstrations/"+sid,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({expected_version:current.version})});current=null;setControls();const status=await api("/demonstrations/"+sid+"/deletion-status");$("deletion").textContent="Deletion status: "+status.state+(status.terminal?" (terminal tombstone)":"");renderCanvas();renderReview();await history()}catch(error){message(error.message,true)}});
+async function promotion(validateOnly){const draft=[...current.analyses].reverse().find(item=>item.kind==="deterministic");try{const path=$("specpath").value.trim();const endpoint=validateOnly?"/promotion/validate":"/promote";const result=await post("/demonstrations/"+current.session_id+endpoint,{expected_version:current.version,analysis_id:draft.analysis_id,spec_path:path});if(validateOnly)message(result.valid?"Private promotion passed local typed validation.":"Private promotion requires corrections.",!result.valid);else{showSession(result.session);message("Created private editable draft "+result.draft.draft_id.slice(0,12)+". Shared authoring was not changed and no target was run.");await history()}}catch(error){message(error.message,true)}}
+$("validate").addEventListener("click",()=>promotion(true));$("promote").addEventListener("click",()=>promotion(false));
+$("signout").addEventListener("click",async()=>{try{await post("/auth/logout",{})}finally{location.replace("/sign-in")}});
+window.addEventListener("blur",()=>{if(directArmed){clearQueuedActions("Browser window lost focus.");disarmDirect("Browser focus was lost; direct input is paused locally.",true)}});document.addEventListener("visibilitychange",()=>{if(document.hidden&&directArmed){clearQueuedActions("Page became hidden.");disarmDirect("The page is hidden; direct input is paused locally.",true)}});
+directInputHandlersInstalled=true;publishWatchLearnInitialization();
+(async()=>{try{auth=await api("/auth/session");if(auth.role!=="operator"){location.replace("/sign-in?state=operator-required");return}await Promise.all([loadProjects(),loadSecrets(),history()]);setControls()}catch(error){message(error.message,true)}})();
+</script>
+</body>
+</html>

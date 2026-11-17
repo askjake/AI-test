@@ -1,0 +1,32 @@
+{
+  "display_name": "Visible application smoke verification",
+  "goal": "Verify that an application reaches an expected visible state and presents clear completion cues.",
+  "target_type": "local-app",
+  "specifications": [
+    {
+      "title": "Confirm initial visible state",
+      "goal": "Confirm that the application opens to a stable, recognizable initial state.",
+      "setup": "Begin from the documented normal starting state.",
+      "assertions": [
+        "The expected primary application surface is visible.",
+        "A clear state cue indicates that initialization has completed."
+      ]
+    },
+    {
+      "title": "Confirm one bounded interaction",
+      "goal": "Exercise one documented interaction and verify its visible outcome.",
+      "setup": "Use only controls described in the approved operating manual.",
+      "assertions": [
+        "The selected control responds without an unexpected blocking state.",
+        "The visible result matches the documented expected outcome."
+      ]
+    }
+  ],
+  "manual_outline": [
+    "Purpose and safe operating boundary",
+    "Normal starting state",
+    "Visible success and completion cues",
+    "Bounded recovery guidance"
+  ],
+  "verification_plan": "Create through typed authoring, review deterministic readiness, then explicitly choose whether to stop or run the whole project."
+}

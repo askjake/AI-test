@@ -1,0 +1,6 @@
+-r requirements.txt
+-r requirements-dashboard.txt
+
+# Starlette 1.x TestClient prefers HTTPX2; this is not a dashboard runtime need.
+httpx2==2.10.0
+pytest==9.1.1

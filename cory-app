@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+export PYTHONPATH="$repo/src"
+exec "$repo/.orchestrator-cookie/venv/bin/python" -B "$repo/scripts/cory_app.py" "${@:-status}"
