@@ -1,12 +1,12 @@
 {
   "adopted_host_files": [],
   "base_label": "nrdp1-b4r11",
-  "built_utc": "2026-11-17T22:03:18Z",
+  "built_utc": "2026-11-18T15:03:09Z",
   "files_rollup_scope": "src/ templates/ scripts/ (EXPLICIT inventory only) docker/entrypoint.sh docker/egress_firewall.sh (excluding src/BUILD_IDENTITY.json, __pycache__, *.pyc, scripts/model_diagnostic.py, scripts/make_synthetic_eval.py); sha256 over sorted 'path\\0sha256\\n'",
-  "files_sha256_rollup": "42b1a4494677d0f1cd46326e934652121db14be26026620e82e9967b9b7005c4",
+  "files_sha256_rollup": "be155dfe304f74ba25d9e79f2578938a7f7370e991fe9bf6f5b63bf755bbfb56",
   "image_scope_file_count": 138,
-  "overlay_manifest_sha256": "8099622e425bd7d44c3d6360a4eafeca8b5e51872b72f829ab1bcefad795ec43",
+  "overlay_manifest_sha256": "5b11183cc8d0c0b265f8c0eb37b7a242339133e9ee860581c6533635e9d13299",
   "schema": 1,
   "source_head": "fff4bb4380c2f88dbf6dc6b122824292b4aee3f1",
-  "version_label": "nrdp1-b4r12-dev-cp73"
+  "version_label": "nrdp1-b4r12-dev-cp73-hk3"
 }

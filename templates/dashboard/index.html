@@ -4593,7 +4593,7 @@ function vncSshUi() {
   const d = authoringState.procedureDraft;
   const s = authoringState.vncSshUi;
   if (s && s.draftId === (d ? d.id : null)) return s;
-  return (authoringState.vncSshUi = {draftId: d ? d.id : null, candidate: null, replaceKey: false, hkStatus: '', hkState: '', gwStatus: '', gwState: '', gwErrors: {}, confirmStatus: '', confirmState: '', confirmChecked: false});
+  return (authoringState.vncSshUi = {draftId: d ? d.id : null, candidate: null, comparedId: null, replaceKey: false, hkStatus: '', hkState: '', gwStatus: '', gwState: '', gwErrors: {}, confirmStatus: '', confirmState: '', confirmChecked: false});
 }
 function vncSshOpen() { authoringState.connBuilder = true; authoringState.connChoice = 'vnc-ssh'; authoringState.vncSshStart = false; renderWizardStepper(); renderWizardContent(); }
 function vncSshLeave() { vncSshClearPasswords(); authoringState.vncSshStart = false; authoringState.connBuilder = true; authoringState.connChoice = null; renderWizardContent(); }
@@ -4727,29 +4727,41 @@ async function vncSshSaveGateway() {
   try {
     const out = await vncSshCall('/gateway', 'PUT', edit);
     if (!out.current) return;
-    procedureApplyServerDraft(out.result, {}); const u = vncSshUi(); u.candidate = null;
+    procedureApplyServerDraft(out.result, {}); const u = vncSshUi(); vncSshInvalidateCandidate();
     u.gwStatus = 'Gateway saved.' + ((edit.host !== undefined || edit.port !== undefined) ? ' The approved host key and the confirmation were removed; approve the key again.' : ' Confirm the target again.'); u.gwState = 'ok';
   } catch (error) { v.gwStatus = vncSshFail(error, 'The gateway was not saved.'); v.gwState = 'error'; }
   renderWizardStepper(); renderWizardContent();
 }
 async function vncSshDiscover() {
-  const v = vncSshUi(); v.hkStatus = 'Reading the gateway\u2019s public host key from the dashboard host\u2026'; v.hkState = ''; v.candidate = null; renderWizardContent();
+  const v = vncSshUi(); v.hkStatus = 'Reading the gateway\u2019s public host key from the dashboard host\u2026'; v.hkState = ''; vncSshInvalidateCandidate(); renderWizardContent();
   try {
     const out = await vncSshCall('/gateway/host-key/discover', 'POST', {confirmation: VNC_SSH_PHRASES.discover});
     if (!out.current) return;
-    v.candidate = out.result; v.hkStatus = 'Key retrieved. Nothing is trusted yet: compare the fingerprint with one you obtained another way.'; v.hkState = 'ok';
-  } catch (error) { v.hkStatus = vncSshFail(error, 'The host key could not be retrieved.'); v.hkState = 'error'; }
+    v.candidate = out.result; v.comparedId = null; v.hkStatus = 'Key retrieved. Nothing is trusted yet: compare the fingerprint with one you obtained another way.'; v.hkState = 'ok';
+  } catch (error) { vncSshInvalidateCandidate(); v.hkStatus = vncSshFail(error, 'The host key could not be retrieved.'); v.hkState = 'error'; }
   renderWizardContent();
+}
+// The "I compared this fingerprint" box confirms ONE exact discovered key: comparedId holds that candidate's id.
+function vncSshReviewed() { const v = vncSshUi(); return Boolean(v.candidate) && v.comparedId === v.candidate.id; }
+function vncSshInvalidateCandidate() { const v = vncSshUi(); v.candidate = null; v.comparedId = null; }
+function vncSshSyncApprove() {
+  const b = document.getElementById('vnc-ssh-approve'), t = document.getElementById('vnc-ssh-verify-fp');
+  if (b) b.disabled = !(vncSshReviewed() || (t && t.value.trim()));
 }
 function vncSshCompareBox() {
   const v = vncSshUi();
-  const box = ProcedureUi.el(document, 'input', {id: 'vnc-ssh-compared', type: 'checkbox', checked: Boolean(v.compared)});
-  box.addEventListener('change', function() { v.compared = box.checked; const b = document.getElementById('vnc-ssh-approve'); const t = document.getElementById('vnc-ssh-verify-fp'); if (b) b.disabled = !(box.checked || (t && t.value.trim())); });
+  const box = ProcedureUi.el(document, 'input', {id: 'vnc-ssh-compared', type: 'checkbox', checked: vncSshReviewed()});
+  box.addEventListener('change', function() { v.comparedId = (box.checked && v.candidate) ? v.candidate.id : null; vncSshSyncApprove(); });
   return box;
 }
+function vncSshVerifyInput(props) {
+  // Typing the independently verified fingerprint is an alternative to ticking the compare box: it enables Approve host key.
+  const input = ProcedureUi.el(document, 'input', props);
+  input.addEventListener('input', vncSshSyncApprove);
+  return input;
+}
 function vncSshApproveButton() {
-  const v = vncSshUi();
-  return procedureButton('vnc-ssh-approve', 'Approve host key', function() { vncSshApprove('discovered'); }, {class: 'btn primary', disabled: !v.compared});
+  return procedureButton('vnc-ssh-approve', 'Approve host key', function() { vncSshApprove('discovered'); }, {class: 'btn primary', disabled: !vncSshReviewed()});
 }
 async function vncSshApprove(source) {
   const v = vncSshUi();
@@ -4757,14 +4769,17 @@ async function vncSshApprove(source) {
   const body = {confirmation: VNC_SSH_PHRASES.approve};
   if (source === 'discovered' && v.candidate) {
     body.candidate_id = v.candidate.id; body.reviewed_known_hosts_line = v.candidate.known_hosts_line;
-    const typedFp = val('vnc-ssh-verify-fp').trim(); if (typedFp) body.expected_fingerprint = typedFp; else body.fingerprint_compared = true;
+    const typedFp = val('vnc-ssh-verify-fp').trim();
+    if (typedFp) body.expected_fingerprint = typedFp;
+    else if (vncSshReviewed()) body.fingerprint_compared = true;   // only for the exact candidate the operator ticked
+    else { v.comparedId = null; v.hkStatus = 'Compare this key\u2019s fingerprint, then tick the box or type the fingerprint you verified.'; v.hkState = 'error'; renderWizardContent(); return; }
   } else { body.reviewed_known_hosts_line = val('vnc-ssh-paste-line').trim(); body.expected_fingerprint = val('vnc-ssh-paste-fp').trim(); }
   try {
     const out = await vncSshCall('/gateway/host-key/approve', 'POST', body);
     if (!out.current) return;
-    procedureApplyServerDraft(out.result, {}); const u = vncSshUi(); u.candidate = null; u.replaceKey = false;
-    u.hkStatus = 'Host key approved.'; u.hkState = 'ok'; u.compared = false;
-  } catch (error) { v.hkStatus = vncSshFail(error, 'The host key was not approved.'); v.hkState = 'error'; }
+    procedureApplyServerDraft(out.result, {}); const u = vncSshUi(); vncSshInvalidateCandidate(); u.replaceKey = false;
+    u.hkStatus = 'Host key approved.'; u.hkState = 'ok';
+  } catch (error) { v.comparedId = null; v.hkStatus = vncSshFail(error, 'The host key was not approved.'); v.hkState = 'error'; }
   renderWizardStepper(); renderWizardContent();
 }
 async function vncSshConfirm() {
@@ -4826,7 +4841,7 @@ function renderVncSshHostKey() {
         el(document, 'label', {class: 'field-help'}, [vncSshCompareBox(), ' I compared this fingerprint with the gateway\u2019s own (for example ssh-keygen -lf on the gateway) and it matches.']),
         el(document, 'details', {}, [el(document, 'summary', {text: 'Or type the fingerprint you verified'}),
           el(document, 'div', {class: 'form-row'}, [el(document, 'label', {for: 'vnc-ssh-verify-fp', text: 'Fingerprint you verified independently'}),
-            el(document, 'input', {id: 'vnc-ssh-verify-fp', type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'SHA256:\u2026'})])]),
+            vncSshVerifyInput({id: 'vnc-ssh-verify-fp', type: 'text', autocomplete: 'off', spellcheck: 'false', placeholder: 'SHA256:\u2026'})])]),
         procedureActions([vncSshApproveButton()])]));
     }
     parts.push(el(document, 'details', {id: 'vnc-ssh-paste', class: 'procedure-edit'}, [el(document, 'summary', {text: 'Paste a reviewed host-key line instead'}),

@@ -204,6 +204,8 @@ def test_node_executable_prefers_the_gate_resolved_binary_over_a_path_shim(tmp_p
 
 
 def test_production_javascript_stub_dom_suite_passes():
+    # Includes the VNC-through-SSH host-key review suite (tests/js/vnc_ssh_host_key_ui.test.js).
+    assert (ROOT / "tests/js/vnc_ssh_host_key_ui.test.js").is_file(), "host-key review suite is part of the release JS gate"
     import subprocess
 
     node = _node_executable()
@@ -221,7 +223,7 @@ def test_production_javascript_stub_dom_suite_passes():
     assert probe.returncode == 0, probe.stdout
     try:
         completed = subprocess.run(
-            [node, "--test", "tests/js/procedure_ui.test.js"], cwd=ROOT, text=True,
+            [node, "--test", "tests/js/procedure_ui.test.js", "tests/js/vnc_ssh_host_key_ui.test.js"], cwd=ROOT, text=True,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60, check=False,
         )
     except subprocess.TimeoutExpired as exc:
